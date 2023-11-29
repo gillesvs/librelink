@@ -10,14 +10,14 @@ Platform | Description
 -- | --
 
 `sensor` | Show info from blueprint API.
-Active Sensor (in days) : All information about your sensor. State is number of days since activation
-Glucose Measurement (in mg/dL) : Measured value every minute
-Glucose Trend : in plain text + icon
-Minutes since update (in min) : self explanatory
+Active Sensor (in days) : All information about your sensor. State is number of days since activation.
+Glucose Measurement (in mg/dL) : Measured value every minute.
+Glucose Trend : in plain text + icon.
+Minutes since update (in min) : self explanatory.
 
-`binary_sensor` | to measure high and low
-Is High | True of False
-Is Low  | True of False
+`binary_sensor` | to measure high and low.
+Is High | True of False.
+Is Low  | True of False.
 
 ## Installation
 
