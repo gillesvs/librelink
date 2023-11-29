@@ -1,4 +1,4 @@
-# Integration Librelink
+# Librelink Integration for Home Assistant 
 
 
 [integration_librelink]: https://github.com/gillesvs/librelink.git
