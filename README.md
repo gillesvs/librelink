@@ -9,7 +9,7 @@
 Platform | Description
 -- | --
 
-`sensor` | Show info from blueprint API.
+`sensor` | Show info from Librelink API.
 - Active Sensor (in days) : All information about your sensor. State is number of days since activation.
 - Glucose Measurement (in mg/dL) : Measured value every minute.
 - Glucose Trend : in plain text + icon.
