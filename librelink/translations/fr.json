@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Enter your mail and password",
+        "description": "Documentation: https://github.com/gillesvs/librelink",
+        "data": {
+          "username": "Mail utilisateur",
+          "password": "Mot de passe"
+        }
+      }
+    },
+    "error": {
+      "auth": "Username/Password is wrong.",
+      "connection": "Unable to connect to the server.",
+      "unknown": "Unknown error occurred."
+    }
+  }
+}
