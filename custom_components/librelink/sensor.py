@@ -131,7 +131,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
                         datetime.now()
                         - datetime.strptime(
                             self.coordinator.data["data"][0]["glucoseMeasurement"][
-                                "FactoryTimestamp"
+                                "Timestamp"
                             ],
                             "%m/%d/%Y %I:%M:%S %p",
                         )
