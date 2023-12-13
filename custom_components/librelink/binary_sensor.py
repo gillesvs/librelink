@@ -67,7 +67,7 @@ class LibreLinkBinarySensor(LibreLinkEntity, BinarySensorEntity):
         super().__init__(coordinator, username, entry_id, description.key)
         self.entity_description = description
 
-    # GVS, visiblement pas terminé
+    # define state based on the entity_description key
     @property
     def is_on(self) -> bool:
         """Return true if the binary_sensor is on."""
@@ -75,5 +75,3 @@ class LibreLinkBinarySensor(LibreLinkEntity, BinarySensorEntity):
             self.entity_description.key
         ]
 
-
-#        return (self.coordinator.data.data[0]["glucoseMeasurement"][self.entity_description.key])
