@@ -1,4 +1,4 @@
-"""Binary sensor platform for librelinkup."""
+"""Binary sensor platform for librelink."""
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import (
@@ -54,7 +54,7 @@ async def async_setup_entry(
 
 
 class LibreLinkBinarySensor(LibreLinkEntity, BinarySensorEntity):
-    """librelinkup binary_sensor class."""
+    """librelink binary_sensor class."""
 
     def __init__(
         self,
