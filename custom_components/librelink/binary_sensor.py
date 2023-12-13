@@ -17,7 +17,6 @@ from .entity import LibreLinkEntity
 
 import logging
 
-# GVS: Tuto pour ajoute r des log
 _LOGGER = logging.getLogger(__name__)
 
 
