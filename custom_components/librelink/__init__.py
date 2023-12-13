@@ -1,7 +1,4 @@
 """Custom integration to integrate LibreLink with Home Assistant.
-
-For more details about this integration, please refer to
-https://github.com/jrsmile/LibreLink
 """
 from __future__ import annotations
 
