@@ -1,7 +1,7 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![Validate with Hassfest](https://github.com/gillesvs/librelink/actions/workflows/hassfest.yml/badge.svg)](https://github.com/gillesvs/librelink/actions/workflows/hassfest.yml)
-[![Validate with HACS](https://github.com/gillesvs/librelink/actions/workflows/validate.yml/badge.svg)](https://github.com/gillesvs/librelink/actions/workflows/validate.yml)
+[![Validate with Hassfest](https://github.com/gillesvs/librelink/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/gillesvs/librelink/actions/workflows/hassfest.yaml)
+[![Validate with HACS](https://github.com/gillesvs/librelink/actions/workflows/validate.yaml/badge.svg)](https://github.com/gillesvs/librelink/actions/workflows/validate.yaml)
 
 # Librelink Integration for Home Assistant 
 
