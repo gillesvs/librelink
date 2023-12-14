@@ -8,10 +8,6 @@
         "data": {
           "username": "Mail",
           "password": "Password"
-        },
-        "data_desciption": {
-          "username": "Mail of the main user",
-          "password": "Password"
         }
       }
     },
