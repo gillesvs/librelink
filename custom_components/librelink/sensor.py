@@ -2,28 +2,22 @@
 
 
 from __future__ import annotations
-
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_USERNAME
+from homeassistant.const import CONF_USERNAME, CONF_UNIT_OF_MEASUREMENT
 from homeassistant.core import HomeAssistant
-
 from datetime import datetime
 import time
-
 from .entity import LibreLinkEntity
-
 from .const import (
     DOMAIN,
     GLUCOSE_VALUE_ICON,
     GLUCOSE_TREND_ICON,
     GLUCOSE_TREND_MESSAGE,
     MG_DL,
+    MMOL_L
 )
-from .coordinator import LibreLinkDataUpdateCoordinator
-
-
 from .coordinator import LibreLinkDataUpdateCoordinator
 
 import logging
@@ -36,12 +30,14 @@ _LOGGER = logging.getLogger(__name__)
     Glucose Trend
     Sensor days and related sensor attributes"""
 
+
 SensorDescription = (
     SensorEntityDescription(
         key="value",
         name="Glucose Measurement",
         #        icon = GLUCOSE_VALUE_ICON, #"mdi:cellphone-arrow-down-variant",
-        unit_of_measurement=MG_DL,
+        # unit_of_measurement=MG_DL,
+        # unit_of_measurement = config_entry.options[CONF_UNIT_OF_MEASUREMENT],
     ),
     SensorEntityDescription(
         key="trend",
@@ -69,11 +65,12 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
     usermail = (config_entry.data[CONF_USERNAME]).split("@")
     username = usermail[0]
+    #    print(f"Unit: {config_entry.options[CONF_UNIT_OF_MEASUREMENT]}")
 
     # I add my three sensors all instantiating a new class LibreLinSensor
     async_add_entities(
         LibreLinkSensor(
-            coordinator, username, config_entry.entry_id, entity_description
+            coordinator, username, config_entry.entry_id, config_entry.options[CONF_UNIT_OF_MEASUREMENT], entity_description
         )
         for entity_description in SensorDescription
     )
@@ -87,11 +84,13 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
         coordinator: LibreLinkDataUpdateCoordinator,
         username: str,
         entry_id: str,
+        uom: str,
         description: SensorEntityDescription,
     ) -> None:
         """Initialize the sensor class."""
         super().__init__(coordinator, username, entry_id, description.key)
         self.entity_description = description
+        self.uom = uom
 
     @property
     def native_value(self):
@@ -101,13 +100,18 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
 
         if self.coordinator.data:
             if self.entity_description.key == "value":
-                result = int(
-                    (
-                        self.coordinator.data["data"][0]["glucoseMeasurement"][
-                            "ValueInMgPerDl"
-                        ]
+                if self.uom == MG_DL:
+                    result = int(
+                        (
+                            self.coordinator.data["data"][0]["glucoseMeasurement"]["ValueInMgPerDl"]
+                        )
                     )
-                )
+                if self.uom == MMOL_L:
+                    result = round(float(
+                        (
+                            self.coordinator.data["data"][0]["glucoseMeasurement"]["ValueInMgPerDl"]/18
+                        )
+                    ),1)
 
             elif self.entity_description.key == "trend":
                 result = GLUCOSE_TREND_MESSAGE[
@@ -163,8 +167,10 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
         """Return the icon for the frontend."""
 
         if self.coordinator.data:
-            if self.entity_description.key in ["value", "sensor"]:
+            if self.entity_description.key in ["sensor"]:
                 return self.entity_description.unit_of_measurement
+            elif self.entity_description.key in ["value"]:
+                return self.uom
         return None
 
     @property

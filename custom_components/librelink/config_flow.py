@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_UNIT_OF_MEASUREMENT
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.core import callback
 
 from .api import (
     LibreLinkApiLogin,
@@ -13,11 +14,11 @@ from .api import (
     LibreLinkApiCommunicationError,
     LibreLinkApiError,
 )
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN, LOGGER, MMOL_L, MG_DL
 
 import logging
 
-# GVS: Tuto pour ajoute r des log
+# GVS: Init logger
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -75,9 +76,6 @@ class LibreLinkFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=_errors,
         )
 
-    # test credential using the login API which enables to retrieve a token
-    # Token is retreived in the __init__.py has it needs to be load at each reboot.
-
     async def _test_credentials(self, username: str, password: str) -> None:
         """Validate credentials."""
         client = LibreLinkApiLogin(
@@ -87,3 +85,39 @@ class LibreLinkFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         await client.async_get_token()
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> LibreLinkOptionsFlowHandler:
+        """Get the options flow for this handler."""
+        return LibreLinkOptionsFlowHandler(config_entry)
+
+    # test credential using the login API which enables to retrieve a token
+    # Token is retreived in the __init__.py has it needs to be load at each reboot.
+
+
+class LibreLinkOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle a option flow for Dexcom."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Handle options flow."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        data_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_UNIT_OF_MEASUREMENT,
+                    default=self.config_entry.options.get(
+                        CONF_UNIT_OF_MEASUREMENT, MG_DL
+                    ),
+                ): vol.In({MG_DL, MMOL_L}),
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=data_schema)
