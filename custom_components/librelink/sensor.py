@@ -35,9 +35,6 @@ SensorDescription = (
     SensorEntityDescription(
         key="value",
         name="Glucose Measurement",
-        #        icon = GLUCOSE_VALUE_ICON, #"mdi:cellphone-arrow-down-variant",
-        # unit_of_measurement=MG_DL,
-        # unit_of_measurement = config_entry.options[CONF_UNIT_OF_MEASUREMENT],
     ),
     SensorEntityDescription(
         key="trend",
