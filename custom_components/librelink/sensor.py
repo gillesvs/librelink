@@ -16,7 +16,7 @@ from .const import (
     GLUCOSE_TREND_ICON,
     GLUCOSE_TREND_MESSAGE,
     MG_DL,
-    MMOL_L
+    MMOL_L,
 )
 from .coordinator import LibreLinkDataUpdateCoordinator
 
@@ -66,11 +66,19 @@ async def async_setup_entry(
     usermail = (config_entry.data[CONF_USERNAME]).split("@")
     username = usermail[0]
     #    print(f"Unit: {config_entry.options[CONF_UNIT_OF_MEASUREMENT]}")
+    try:
+        custom_unit = config_entry.options[CONF_UNIT_OF_MEASUREMENT]
+    except KeyError:
+        custom_unit = MG_DL
 
     # I add my three sensors all instantiating a new class LibreLinSensor
     async_add_entities(
         LibreLinkSensor(
-            coordinator, username, config_entry.entry_id, config_entry.options[CONF_UNIT_OF_MEASUREMENT], entity_description
+            coordinator,
+            username,
+            config_entry.entry_id,
+            custom_unit,
+            entity_description,
         )
         for entity_description in SensorDescription
     )
@@ -103,15 +111,23 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
                 if self.uom == MG_DL:
                     result = int(
                         (
-                            self.coordinator.data["data"][0]["glucoseMeasurement"]["ValueInMgPerDl"]
+                            self.coordinator.data["data"][0]["glucoseMeasurement"][
+                                "ValueInMgPerDl"
+                            ]
                         )
                     )
                 if self.uom == MMOL_L:
-                    result = round(float(
-                        (
-                            self.coordinator.data["data"][0]["glucoseMeasurement"]["ValueInMgPerDl"]/18
-                        )
-                    ),1)
+                    result = round(
+                        float(
+                            (
+                                self.coordinator.data["data"][0]["glucoseMeasurement"][
+                                    "ValueInMgPerDl"
+                                ]
+                                / 18
+                            )
+                        ),
+                        1,
+                    )
 
             elif self.entity_description.key == "trend":
                 result = GLUCOSE_TREND_MESSAGE[
