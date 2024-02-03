@@ -72,13 +72,16 @@ async def async_setup_entry(
     except KeyError:
         custom_unit = MG_DL
 
-# Starts here, for each patients, new entity base on patients and not user
+    # Starts here, for each patients, new entity base on patients and not user
+    # using an index as we need to keep the coordinator in the @property to get updates from coordinator
 
+    for index, patients in enumerate(coordinator.data["data"]):
+#        print(index, patients)
 
-    for patients in coordinator.data["data"]:
+    # for patients in coordinator.data["data"]:
         patient = patients["firstName"] + " " + patients["lastName"]
         patientId = patients["patientId"]
-        print(f"patient : {patient}")
+#        print(f"patient : {patient}")
 
 
         # I add my three sensors all instantiating a new class LibreLinSensor
@@ -88,6 +91,7 @@ async def async_setup_entry(
                 patients,
                 patientId,
                 patient,
+                index,
                 config_entry.entry_id,
                 custom_unit,
                 entity_description,
@@ -106,6 +110,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
         patients,
         patientId: str,
         patient: str,
+        index: int,
         entry_id: str,
         uom: str,
         description: SensorEntityDescription,
@@ -114,6 +119,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
         super().__init__(coordinator, patientId, patient, entry_id, description.key)
         self.entity_description = description
         self.uom = uom
+        self.index = index
         self.patients = patients
 
     @property
@@ -127,7 +133,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
                 if self.uom == MG_DL:
                     result = int(
                         (
-                            self.patients["glucoseMeasurement"][
+                            self.coordinator.data["data"][self.index]["glucoseMeasurement"][
                                 "ValueInMgPerDl"
                             ]
                         )
@@ -136,7 +142,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
                     result = round(
                         float(
                             (
-                                self.patients["glucoseMeasurement"][
+                                self.coordinator.data["data"][self.index]["glucoseMeasurement"][
                                     "ValueInMgPerDl"
                                 ]
                                 / MMOL_DL_TO_MG_DL
@@ -148,7 +154,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
             elif self.entity_description.key == "trend":
                 result = GLUCOSE_TREND_MESSAGE[
                     (
-                        self.patients["glucoseMeasurement"][
+                        self.coordinator.data["data"][self.index]["glucoseMeasurement"][
                             "TrendArrow"
                         ]
                     )
@@ -157,7 +163,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
 
             elif self.entity_description.key == "sensor":
                 result = int(
-                    (time.time() - (self.patients["sensor"]["a"]))
+                    (time.time() - (self.coordinator.data["data"][self.index]["sensor"]["a"]))
                     / 86400
                 )
 
@@ -166,7 +172,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
                     (
                         datetime.now()
                         - datetime.strptime(
-                            self.patients["glucoseMeasurement"][
+                            self.coordinator.data["data"][self.index]["glucoseMeasurement"][
                                 "Timestamp"
                             ],
                             "%m/%d/%Y %I:%M:%S %p",
@@ -182,11 +188,11 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
     def icon(self):
         """Return the icon for the frontend."""
 
-        if self.patients:
+        if self.coordinator.data["data"][self.index]:
             if self.entity_description.key in ["value", "trend"]:
                 return GLUCOSE_TREND_ICON[
                     (
-                        self.patients["glucoseMeasurement"][
+                        self.coordinator.data["data"][self.index]["glucoseMeasurement"][
                             "TrendArrow"
                         ]
                     )
@@ -198,7 +204,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
     def unit_of_measurement(self):
         """Return the icon for the frontend."""
 
-        if self.patients:
+        if self.coordinator.data["data"][self.index]:
             if self.entity_description.key in ["sensor"]:
                 return self.entity_description.unit_of_measurement
             elif self.entity_description.key in ["value"]:
@@ -209,15 +215,15 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
     def extra_state_attributes(self):
         """Return the state attributes of the device."""
         result = None
-        if self.patients:
+        if self.coordinator.data["data"][self.index]:
             if self.entity_description.key == "sensor":
                 result = {
-                    "Serial number": f"{self.patients['sensor']['pt']} {self.patients['sensor']['sn']}",
+                    "Serial number": f"{self.coordinator.data['data'][self.index]['sensor']['pt']} {self.coordinator.data['data'][self.index]['sensor']['sn']}",
                     "Activation date": datetime.fromtimestamp(
-                        (self.patients["sensor"]["a"])
+                        (self.coordinator.data["data"][self.index]["sensor"]["a"])
                     ),
-                    "patientId": self.patients["patientId"],
-                    "Patient": f"{(self.patients['lastName']).upper()} {self.patients['firstName']}",
+                    "patientId": self.coordinator.data["data"][self.index]["patientId"],
+                    "Patient": f"{(self.coordinator.data['data'][self.index]['lastName']).upper()} {self.coordinator.data['data'][self.index]['firstName']}",
                 }
 
             return result

@@ -44,8 +44,8 @@ async def async_setup_entry(
 
     # to manage multiple patients, the API return an array of patients in "data". So we loop in the array
     # and create as many devices and sensors as we do have patients.
-    
-    for patients in coordinator.data["data"]:
+
+    for index, patients in enumerate(coordinator.data["data"]):
         patient = patients["firstName"] + " " + patients["lastName"]
         patientId = patients["patientId"]
 #        print(f"patient : {patient}")
@@ -56,6 +56,7 @@ async def async_setup_entry(
                 patients,
                 patientId,
                 patient,
+                index,
                 config_entry.entry_id,
                 entity_description,
             )
@@ -72,6 +73,7 @@ class LibreLinkBinarySensor(LibreLinkEntity, BinarySensorEntity):
         patients,
         patientId: str,
         patient: str,
+        index: int,
         entry_id,
         description: BinarySensorEntityDescription,
     ) -> None:
@@ -79,12 +81,13 @@ class LibreLinkBinarySensor(LibreLinkEntity, BinarySensorEntity):
         super().__init__(coordinator, patientId, patient, entry_id, description.key)
         self.entity_description = description
         self.patients = patients
+        self.index = index
 
     # define state based on the entity_description key
     @property
     def is_on(self) -> bool:
         """Return true if the binary_sensor is on."""
-        return self.patients["glucoseMeasurement"][
+        return self.coordinator.data["data"][self.index]["glucoseMeasurement"][
             self.entity_description.key
         ]
 
