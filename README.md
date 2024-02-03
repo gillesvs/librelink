@@ -45,3 +45,4 @@ Platform | Description
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
 
 ***
+https://www.buymeacoffee.com/roan7dxbbb
