@@ -24,6 +24,11 @@ Platform | Description
 - Is High | True of False.
 - Is Low  | True of False.
 
+## Illustration
+
+![image](https://github.com/gillesvs/librelink/assets/51242147/bfed1b2b-dbf7-4666-a202-885ff3db67b8)
+
+
 ## Installation
 
 1. Add this repository as a custom repository in HACS
