@@ -39,16 +39,27 @@ async def async_setup_entry(
 ):
     """Set up the binary_sensor platform."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    usermail = (config_entry.data[CONF_USERNAME]).split("@")
-    username = usermail[0]
-    async_add_entities(
-        LibreLinkBinarySensor(
-            coordinator,
-            username,
-            config_entry.entry_id,
-            entity_description,
-        )
-        for entity_description in BinarySensorDescription
+    # usermail = (config_entry.data[CONF_USERNAME]).split("@")
+    # username = usermail[0]
+
+    # to manage multiple patients, the API return an array of patients in "data". So we loop in the array
+    # and create as many devices and sensors as we do have patients.
+    
+    for patients in coordinator.data["data"]:
+        patient = patients["firstName"] + " " + patients["lastName"]
+        patientId = patients["patientId"]
+#        print(f"patient : {patient}")
+
+        async_add_entities(
+            LibreLinkBinarySensor(
+                coordinator,
+                patients,
+                patientId,
+                patient,
+                config_entry.entry_id,
+                entity_description,
+            )
+            for entity_description in BinarySensorDescription
     )
 
 
@@ -58,19 +69,22 @@ class LibreLinkBinarySensor(LibreLinkEntity, BinarySensorEntity):
     def __init__(
         self,
         coordinator: LibreLinkDataUpdateCoordinator,
-        username: str,
+        patients,
+        patientId: str,
+        patient: str,
         entry_id,
         description: BinarySensorEntityDescription,
     ) -> None:
         """Initialize the binary_sensor class."""
-        super().__init__(coordinator, username, entry_id, description.key)
+        super().__init__(coordinator, patientId, patient, entry_id, description.key)
         self.entity_description = description
+        self.patients = patients
 
     # define state based on the entity_description key
     @property
     def is_on(self) -> bool:
         """Return true if the binary_sensor is on."""
-        return self.coordinator.data["data"][0]["glucoseMeasurement"][
+        return self.patients["glucoseMeasurement"][
             self.entity_description.key
         ]
 

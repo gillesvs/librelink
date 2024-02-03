@@ -41,11 +41,17 @@ class LibreLinkApiClient:
             },
             data={},
         )
-        #        print(APIreponse["data"][0]["glucoseMeasurement"]["Value"])
+
+
         _LOGGER.debug(
-            "API Response : '%s''",
+            "Array size : %s",
+            len(APIreponse["data"]),
+        )
+        _LOGGER.debug(
+            "API Response : %s",
             APIreponse,
         )
+
         return APIreponse
 
 

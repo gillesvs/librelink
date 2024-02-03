@@ -26,7 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
 
     _LOGGER.debug(
-        "Appel de async_setup_entry entry: entry_id='%s', data='%s'",
+        "Appel de async_setup_entry entry: entry_id= %s, data= %s, user = %s password = %s",
         entry.entry_id,
         entry.data,
         entry.data[CONF_USERNAME],

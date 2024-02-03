@@ -13,7 +13,7 @@ from .coordinator import LibreLinkDataUpdateCoordinator
 
 import logging
 
-# GVS: Tuto pour ajouter des log
+# GVS: enable logging
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -26,21 +26,22 @@ class LibreLinkEntity(CoordinatorEntity):
     def __init__(
         self,
         coordinator: LibreLinkDataUpdateCoordinator,
-        username: str,
+        patientId: str,
+        patient: str,
         entry_id: str,
         key: str,
     ) -> None:
         """Initialize."""
         super().__init__(coordinator)
         # Creating unique IDs using sensor key.
-        self._attr_unique_id = f"{username}-{entry_id}-{key}"
+        self._attr_unique_id = f"{patientId}-{entry_id}-{key}"
         _LOGGER.debug(
             "entity unique id is '%s'",
             self._attr_unique_id,
         )
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
-            name=username,
+            name=patient,
             model=VERSION,
             manufacturer=NAME,
         )

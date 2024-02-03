@@ -7,5 +7,5 @@
   "documentation": "https://github.com/gillesvs/librelink",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/gillesvs/librelink/issues",
-  "version": "1.1.2"
+  "version": "1.1.3"
 }
