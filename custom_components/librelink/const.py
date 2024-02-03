@@ -5,7 +5,7 @@ LOGGER: Logger = getLogger(__package__)
 
 NAME = "LibreLink"
 DOMAIN = "librelink"
-VERSION = "1.1.2b"
+VERSION = "1.1.3"
 ATTRIBUTION = "Data provided by https://libreview.com"
 LOGIN_URL = "https://api.libreview.io/llu/auth/login"
 CONNECTION_URL = "https://api.libreview.io/llu/connections"
@@ -29,3 +29,6 @@ GLUCOSE_TREND_MESSAGE = [
 ]
 MMOL_L = "mmol/L"
 MG_DL = "mg/dL"
+MMOL_DL_TO_MG_DL = 18
+REFRESH_RATE_MIN = 1
+

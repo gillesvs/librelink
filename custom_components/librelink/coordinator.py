@@ -16,7 +16,7 @@ from .api import (
     LibreLinkApiAuthenticationError,
     LibreLinkApiError,
 )
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN, LOGGER, REFRESH_RATE_MIN
 
 
 class LibreLinkDataUpdateCoordinator(DataUpdateCoordinator):
@@ -37,7 +37,7 @@ class LibreLinkDataUpdateCoordinator(DataUpdateCoordinator):
             hass=hass,
             logger=LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(minutes=1),
+            update_interval=timedelta(minutes=REFRESH_RATE_MIN),
         )
 
     async def _async_update_data(self):

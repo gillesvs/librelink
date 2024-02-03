@@ -17,6 +17,7 @@ from .const import (
     GLUCOSE_TREND_MESSAGE,
     MG_DL,
     MMOL_L,
+    MMOL_DL_TO_MG_DL,
 )
 from .coordinator import LibreLinkDataUpdateCoordinator
 
@@ -138,7 +139,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
                                 self.patients["glucoseMeasurement"][
                                     "ValueInMgPerDl"
                                 ]
-                                / 18
+                                / MMOL_DL_TO_MG_DL
                             )
                         ),
                         1,
