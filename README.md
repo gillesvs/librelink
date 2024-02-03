@@ -24,7 +24,7 @@ Platform | Description
 - Is High | True of False.
 - Is Low  | True of False.
 
-## Illustration
+## Illustration with a custom:mini-graph-card
 
 ![image](https://github.com/gillesvs/librelink/assets/51242147/bfed1b2b-dbf7-4666-a202-885ff3db67b8)
 
