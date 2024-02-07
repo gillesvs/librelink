@@ -13,23 +13,23 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 from .coordinator import LibreLinkDataUpdateCoordinator
-from .entity import LibreLinkEntity
+from .device import LibreLinkDevice
 
 import logging
 
 _LOGGER = logging.getLogger(__name__)
 
 
-BinarySensorDescription = (
-    BinarySensorEntityDescription(
-        key="isHigh",
-        name="Is High",
-    ),
-    BinarySensorEntityDescription(
-        key="isLow",
-        name="Is Low",
-    ),
-)
+# BinarySensorDescription = (
+#     BinarySensorEntityDescription(
+#         key="isHigh",
+#         name="Is High",
+#     ),
+#     BinarySensorEntityDescription(
+#         key="isLow",
+#         name="Is Low",
+#     ),
+# )
 
 
 async def async_setup_entry(
@@ -44,13 +44,12 @@ async def async_setup_entry(
 
     # to manage multiple patients, the API return an array of patients in "data". So we loop in the array
     # and create as many devices and sensors as we do have patients.
-
+    sensors = []
     for index, patients in enumerate(coordinator.data["data"]):
         patient = patients["firstName"] + " " + patients["lastName"]
         patientId = patients["patientId"]
-#        print(f"patient : {patient}")
-
-        async_add_entities(
+        #        print(f"patient : {patient}")
+        sensors.extend( [
             LibreLinkBinarySensor(
                 coordinator,
                 patients,
@@ -58,13 +57,25 @@ async def async_setup_entry(
                 patient,
                 index,
                 config_entry.entry_id,
-                entity_description,
-            )
-            for entity_description in BinarySensorDescription
-    )
+                key="isHigh",
+                name= "Is High",
+            ),
+            LibreLinkBinarySensor(
+                coordinator,
+                patients,
+                patientId,
+                patient,
+                index,
+                config_entry.entry_id,
+                key="isLow",
+                name="Is Low",
+            ),
+        ])
+    async_add_entities(sensors)
 
 
-class LibreLinkBinarySensor(LibreLinkEntity, BinarySensorEntity):
+
+class LibreLinkBinarySensor(LibreLinkDevice, BinarySensorEntity):
     """librelink binary_sensor class."""
 
     def __init__(
@@ -75,19 +86,38 @@ class LibreLinkBinarySensor(LibreLinkEntity, BinarySensorEntity):
         patient: str,
         index: int,
         entry_id,
-        description: BinarySensorEntityDescription,
+        key: str,
+        name: str,
     ) -> None:
-        """Initialize the binary_sensor class."""
-        super().__init__(coordinator, patientId, patient, entry_id, description.key)
-        self.entity_description = description
+        """Initialize the device class."""
+        super().__init__(
+            coordinator, patientId, patient)
+
+        self.key = key
         self.patients = patients
+        self.patientId = patientId
         self.index = index
+        self._attr_name = name
+
+    @property
+    def unique_id(self):
+        # field = self._field
+        # if self._index != None:
+        #     field = f"{field}_{self._index}"
+        return f"{self.patientId}_{self.key}_{self.index}"
+
+    # @property
+    # def name(self):
+    #     # field = self._field
+    #     # if self._index != None:
+    #     #     field = f"{field}_{self._index}"
+    #     return self.name
 
     # define state based on the entity_description key
     @property
     def is_on(self) -> bool:
         """Return true if the binary_sensor is on."""
-        return self.coordinator.data["data"][self.index]["glucoseMeasurement"][
-            self.entity_description.key
+        # return self.coordinator.data["data"][self.index]["glucoseMeasurement"][
+        return self.patients["glucoseMeasurement"][
+            self.key
         ]
-

@@ -2,14 +2,14 @@
 
 
 from __future__ import annotations
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_USERNAME, CONF_UNIT_OF_MEASUREMENT
 from homeassistant.core import HomeAssistant
 from datetime import datetime
 import time
-from .entity import LibreLinkEntity
+from .device import LibreLinkDevice
 from .const import (
     DOMAIN,
     GLUCOSE_VALUE_ICON,
@@ -32,31 +32,6 @@ _LOGGER = logging.getLogger(__name__)
     Sensor days and related sensor attributes"""
 
 
-SensorDescription = (
-    SensorEntityDescription(
-        key="value",
-        name="Glucose Measurement",
-        #        icon = GLUCOSE_VALUE_ICON, #"mdi:cellphone-arrow-down-variant",
-        # unit_of_measurement=MG_DL,
-        # unit_of_measurement = config_entry.options[CONF_UNIT_OF_MEASUREMENT],
-    ),
-    SensorEntityDescription(
-        key="trend",
-        name="Glucose Trend",
-    ),
-    SensorEntityDescription(
-        key="sensor",
-        name="Active Sensor",
-        unit_of_measurement="days",
-    ),
-    SensorEntityDescription(
-        key="delay",
-        name="Minutes since update",
-        unit_of_measurement="min",
-    ),
-)
-
-
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -64,44 +39,75 @@ async def async_setup_entry(
 ):
     """Set up the sensor platform."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    # usermail = (config_entry.data[CONF_USERNAME]).split("@")
-    # username = usermail[0]
-    #    print(f"Unit: {config_entry.options[CONF_UNIT_OF_MEASUREMENT]}")
+
+# If custom unit of measurement is selectid it is initialized, otherwise MG/DL is used
     try:
         custom_unit = config_entry.options[CONF_UNIT_OF_MEASUREMENT]
     except KeyError:
         custom_unit = MG_DL
 
-    # Starts here, for each patients, new entity base on patients and not user
+    # For each patients, new Device base on patients and
     # using an index as we need to keep the coordinator in the @property to get updates from coordinator
+    # we create an array of entities then create entities.
 
+    sensors = []
     for index, patients in enumerate(coordinator.data["data"]):
-#        print(index, patients)
-
-    # for patients in coordinator.data["data"]:
         patient = patients["firstName"] + " " + patients["lastName"]
         patientId = patients["patientId"]
-#        print(f"patient : {patient}")
-
-
-        # I add my three sensors all instantiating a new class LibreLinSensor
-        async_add_entities(
-            LibreLinkSensor(
-                coordinator,
-                patients,
-                patientId,
-                patient,
-                index,
-                config_entry.entry_id,
-                custom_unit,
-                entity_description,
-            )
-            for entity_description in SensorDescription
-
+        #        print(f"patient : {patient}")
+        sensors.extend(
+            [
+                LibreLinkSensor(
+                    coordinator,
+                    patients,
+                    patientId,
+                    patient,
+                    index,
+                    config_entry.entry_id,
+                    "value",  # key
+                    "Glucose Measurement",  # name
+                    custom_unit,
+                ),
+                LibreLinkSensor(
+                    coordinator,
+                    patients,
+                    patientId,
+                    patient,
+                    index,
+                    config_entry.entry_id,
+                    "trend",  # key
+                    "Trend",  # name
+                    custom_unit,
+                ),
+                LibreLinkSensor(
+                    coordinator,
+                    patients,
+                    patientId,
+                    patient,
+                    index,
+                    config_entry.entry_id,
+                    "sensor",  # key
+                    "Active Sensor",  # name
+                    "days",  # uom
+                ),
+                LibreLinkSensor(
+                    coordinator,
+                    patients,
+                    patientId,
+                    patient,
+                    index,
+                    config_entry.entry_id,
+                    "delay",  # key
+                    "Minutes since update",  # name
+                    "min",  # uom
+                ),
+            ]
         )
 
+    async_add_entities(sensors)
 
-class LibreLinkSensor(LibreLinkEntity, SensorEntity):
+
+class LibreLinkSensor(LibreLinkDevice, SensorEntity):
     """LibreLink Sensor class."""
 
     def __init__(
@@ -110,17 +116,23 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
         patients,
         patientId: str,
         patient: str,
-        index: int,
+        index,
         entry_id: str,
-        uom: str,
-        description: SensorEntityDescription,
+        key: str,
+        name: str,
+        uom,
     ) -> None:
-        """Initialize the sensor class."""
-        super().__init__(coordinator, patientId, patient, entry_id, description.key)
-        self.entity_description = description
+        """Initialize the device class."""
+        super().__init__(coordinator, patientId, patient)
         self.uom = uom
-        self.index = index
+        print(f"index : {index}")
         self.patients = patients
+        self.patientId = patientId
+        print(f"PatientId : {self.patientId}")
+        self._attr_unique_id = f"{patientId}_{key}_{index}"
+        self._attr_name = name
+        self.index = index
+        self.key = key
 
     @property
     def native_value(self):
@@ -129,29 +141,29 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
         result = None
 
         if self.patients:
-            if self.entity_description.key == "value":
+            if self.key == "value":
                 if self.uom == MG_DL:
                     result = int(
                         (
-                            self.coordinator.data["data"][self.index]["glucoseMeasurement"][
-                                "ValueInMgPerDl"
-                            ]
+                            self.coordinator.data["data"][self.index][
+                                "glucoseMeasurement"
+                            ]["ValueInMgPerDl"]
                         )
                     )
                 if self.uom == MMOL_L:
                     result = round(
                         float(
                             (
-                                self.coordinator.data["data"][self.index]["glucoseMeasurement"][
-                                    "ValueInMgPerDl"
-                                ]
+                                self.coordinator.data["data"][self.index][
+                                    "glucoseMeasurement"
+                                ]["ValueInMgPerDl"]
                                 / MMOL_DL_TO_MG_DL
                             )
                         ),
                         1,
                     )
 
-            elif self.entity_description.key == "trend":
+            elif self.key == "trend":
                 result = GLUCOSE_TREND_MESSAGE[
                     (
                         self.coordinator.data["data"][self.index]["glucoseMeasurement"][
@@ -161,24 +173,27 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
                     - 1
                 ]
 
-            elif self.entity_description.key == "sensor":
+            elif self.key == "sensor":
                 result = int(
-                    (time.time() - (self.coordinator.data["data"][self.index]["sensor"]["a"]))
+                    (
+                        time.time()
+                        - (self.coordinator.data["data"][self.index]["sensor"]["a"])
+                    )
                     / 86400
                 )
 
-            elif self.entity_description.key == "delay":
+            elif self.key == "delay":
                 result = int(
                     (
                         datetime.now()
                         - datetime.strptime(
-                            self.coordinator.data["data"][self.index]["glucoseMeasurement"][
-                                "Timestamp"
-                            ],
+                            self.coordinator.data["data"][self.index][
+                                "glucoseMeasurement"
+                            ]["Timestamp"],
                             "%m/%d/%Y %I:%M:%S %p",
                         )
                     ).total_seconds()
-                    / 60
+                    / 60 # convert seconds in minutes
                 )
 
             return result
@@ -189,7 +204,7 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
         """Return the icon for the frontend."""
 
         if self.coordinator.data["data"][self.index]:
-            if self.entity_description.key in ["value", "trend"]:
+            if self.key in ["value", "trend"]:
                 return GLUCOSE_TREND_ICON[
                     (
                         self.coordinator.data["data"][self.index]["glucoseMeasurement"][
@@ -202,21 +217,19 @@ class LibreLinkSensor(LibreLinkEntity, SensorEntity):
 
     @property
     def unit_of_measurement(self):
-        """Return the icon for the frontend."""
+        """Only used for glucose measurement and librelink sensor delay since update."""
 
         if self.coordinator.data["data"][self.index]:
-            if self.entity_description.key in ["sensor"]:
-                return self.entity_description.unit_of_measurement
-            elif self.entity_description.key in ["value"]:
+            if self.key in ["sensor", "value"]:
                 return self.uom
         return None
 
     @property
     def extra_state_attributes(self):
-        """Return the state attributes of the device."""
+        """Return the state attributes of the librelink sensor."""
         result = None
         if self.coordinator.data["data"][self.index]:
-            if self.entity_description.key == "sensor":
+            if self.key == "sensor":
                 result = {
                     "Serial number": f"{self.coordinator.data['data'][self.index]['sensor']['pt']} {self.coordinator.data['data'][self.index]['sensor']['sn']}",
                     "Activation date": datetime.fromtimestamp(

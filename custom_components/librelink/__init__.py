@@ -10,7 +10,7 @@ import logging
 
 
 from .api import LibreLinkApiClient, LibreLinkApiLogin
-from .const import DOMAIN
+from .const import DOMAIN, BASE_URL
 from .coordinator import LibreLinkDataUpdateCoordinator
 
 PLATFORMS: list[Platform] = [
@@ -31,6 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data,
         entry.data[CONF_USERNAME],
         entry.data[CONF_PASSWORD],
+        entry.data[BASE_URL]
     )
 
     hass.data.setdefault(DOMAIN, {})
@@ -40,6 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     myLibrelinkLogin = LibreLinkApiLogin(
         username=entry.data[CONF_USERNAME],
         password=entry.data[CONF_PASSWORD],
+        base_url= entry.data[BASE_URL],
         session=async_get_clientsession(hass),
     )
 
@@ -50,6 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     myLibrelinkClient = LibreLinkApiClient(
         sessionToken,
         session=async_get_clientsession(hass),
+        base_url=entry.data[BASE_URL]
     )
 
     hass.data[DOMAIN][entry.entry_id] = coordinator = LibreLinkDataUpdateCoordinator(

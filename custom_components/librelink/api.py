@@ -22,17 +22,18 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class LibreLinkApiClient:
-    def __init__(self, token: str, session: aiohttp.ClientSession) -> None:
+    def __init__(self, token: str, base_url:str, session: aiohttp.ClientSession) -> None:
         """Sample API Client."""
         self._token = token
         self._session = session
+        self.connection_url = base_url + CONNECTION_URL
 
     async def async_get_data(self) -> any:
         """Get data from the API."""
         APIreponse = await api_wrapper(
             self._session,
             method="get",
-            url=CONNECTION_URL,
+            url= self.connection_url,
             headers={
                 "product": PRODUCT,
                 "version": VERSION_APP,
@@ -55,18 +56,17 @@ class LibreLinkApiClient:
         return APIreponse
 
 
-#######################################################################################
-#            """API launched at start-up to get the Librelink Token."""               #
-#######################################################################################
+
 
 
 class LibreLinkApiLogin:
     def __init__(
-        self, username: str, password: str, session: aiohttp.ClientSession
+        self, username: str, password: str, base_url: str, session: aiohttp.ClientSession
     ) -> None:
         """Sample API Client."""
         self._username = username
         self._password = password
+        self.login_url = base_url + LOGIN_URL
         self._session = session
 
     async def async_get_token(self) -> any:
@@ -74,7 +74,7 @@ class LibreLinkApiLogin:
         reponseLogin = await api_wrapper(
             self._session,
             method="post",
-            url=LOGIN_URL,
+            url=self.login_url,
             headers={
                 "product": PRODUCT,
                 "version": VERSION_APP,
