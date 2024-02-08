@@ -129,7 +129,7 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
         self.patients = patients
         self.patientId = patientId
         print(f"PatientId : {self.patientId}")
-        self._attr_unique_id = f"{patientId}_{key}_{index}"
+        self._attr_unique_id = f"{patientId}_{key}"
         self._attr_name = name
         self.index = index
         self.key = key

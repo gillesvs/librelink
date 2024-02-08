@@ -56,7 +56,7 @@ async def async_setup_entry(
                 patientId,
                 patient,
                 index,
-                config_entry.entry_id,
+#                config_entry.entry_id,
                 key="isHigh",
                 name= "Is High",
             ),
@@ -66,7 +66,7 @@ async def async_setup_entry(
                 patientId,
                 patient,
                 index,
-                config_entry.entry_id,
+#                config_entry.entry_id,
                 key="isLow",
                 name="Is Low",
             ),
@@ -85,7 +85,6 @@ class LibreLinkBinarySensor(LibreLinkDevice, BinarySensorEntity):
         patientId: str,
         patient: str,
         index: int,
-        entry_id,
         key: str,
         name: str,
     ) -> None:
@@ -101,17 +100,7 @@ class LibreLinkBinarySensor(LibreLinkDevice, BinarySensorEntity):
 
     @property
     def unique_id(self):
-        # field = self._field
-        # if self._index != None:
-        #     field = f"{field}_{self._index}"
-        return f"{self.patientId}_{self.key}_{self.index}"
-
-    # @property
-    # def name(self):
-    #     # field = self._field
-    #     # if self._index != None:
-    #     #     field = f"{field}_{self._index}"
-    #     return self.name
+        return f"{self.patientId}_{self.key}"#_{self.index}"
 
     # define state based on the entity_description key
     @property

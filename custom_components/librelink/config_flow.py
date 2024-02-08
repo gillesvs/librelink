@@ -131,34 +131,9 @@ class LibreLinkOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(step_id="init", data_schema=data_schema)
 
 
-    # """Setup sensors from a config entry created in the integrations UI."""
-    # config = hass.data[DOMAIN][config_entry.entry_id]
-    # session = async_get_clientsession(hass)
-    # github = GitHubAPI(session, "requester", oauth_token=config[CONF_ACCESS_TOKEN])
-    # sensors = [GitHubRepoSensor(github, repo) for repo in config[CONF_REPOS]]
-
-        # Grab all configured repos from the entity registry so we can populate the
-        # multi-select dropdown that will allow a user to remove a repo.
-        # entity_registry = await async_get_registry(self.hass)
-        # entries = async_entries_for_config_entry(
-        #     entity_registry, self.config_entry.entry_id
-        # )
-        # Default value for our multi-select.
-
-
         # all_repos = {e.entity_id: e.original_name for e in entries}
         # repo_map = {e.entity_id: e for e in entries}
 
-        # if user_input is not None:
-        #     # Validation and additional processing logic omitted for brevity.
-        #     # ...
-        #     if not errors:
-        #         # Value of data will be set on the options property of our config_entry
-        #         # instance.
-        #         return self.async_create_entry(
-        #             title="",
-        #             data={CONF_REPOS: updated_repos},
-        #         )
 
         # options_schema = vol.Schema(
         #     {
@@ -171,4 +146,3 @@ class LibreLinkOptionsFlowHandler(config_entries.OptionsFlow):
         # )
         # return self.async_show_form(
         #     step_id="init", data_schema=options_schema, errors=errors
-        # )
