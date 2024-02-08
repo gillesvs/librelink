@@ -1,0 +1,26 @@
+type: custom:mini-graph-card
+entities:
+  - entity: sensor.maxence_van_schendel_glucose_measurement
+    state_adaptive_color: true
+    show_icon: true
+name: Glycémie
+lower_bound: 0
+align_icon: left
+hours_to_show: 24
+points_per_hour: 15
+smoothing: false
+show:
+  icon_adaptive_color: true
+  points: hover
+  state: true
+  extrema: true
+  average: true
+color_thresholds:
+  - value: 0
+    color: '#0000ff'
+  - value: 70
+    color: '#00ff00'
+  - value: 180
+    color: '#ffa500'
+  - value: 250
+    color: '#ff0000'
