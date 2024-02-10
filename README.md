@@ -28,6 +28,9 @@ Platform | Description
 
 ![image](https://github.com/gillesvs/librelink/assets/51242147/bfed1b2b-dbf7-4666-a202-885ff3db67b8)
 
+And the yaml if you like this card:
+https://github.com/gillesvs/librelink/blob/main/custom_components/librelink/mini-graph-glucose.yml
+
 
 ## Installation
 
