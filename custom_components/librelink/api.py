@@ -1,28 +1,30 @@
-""" I used the https://libreview-unofficial.stoplight.io/docs/libreview-unofficial/ as a starting point to use the Abbot Libreview API"""
-
+"""I used the https://libreview-unofficial.stoplight.io/docs/libreview-unofficial/ as a starting point to use the Abbot Libreview API."""
 
 from __future__ import annotations
 
 import asyncio
+import logging
 import socket
 
 import aiohttp
-import async_timeout
-from .const import LOGIN_URL, CONNECTION_URL, PRODUCT, VERSION_APP, APPLICATION
 
-import logging
-
+from .const import APPLICATION, CONNECTION_URL, LOGIN_URL, PRODUCT, VERSION_APP
 
 _LOGGER = logging.getLogger(__name__)
 
 
-################################################################
-#          """API used for all data except login """    #
-################################################################
-
-
 class LibreLinkApiClient:
-    def __init__(self, token: str, base_url:str, session: aiohttp.ClientSession) -> None:
+    """API class to retriev measurement data.
+
+    Attributes:
+        token: The long life token to authenticate.
+        base_url: For API calls depending on your location
+        Session: aiottp object for the open session
+    """
+
+    def __init__(
+        self, token: str, base_url: str, session: aiohttp.ClientSession
+    ) -> None:
         """Sample API Client."""
         self._token = token
         self._session = session
@@ -33,7 +35,7 @@ class LibreLinkApiClient:
         APIreponse = await api_wrapper(
             self._session,
             method="get",
-            url= self.connection_url,
+            url=self.connection_url,
             headers={
                 "product": PRODUCT,
                 "version": VERSION_APP,
@@ -43,25 +45,83 @@ class LibreLinkApiClient:
             data={},
         )
 
+        # Ordering API response by patients as the API does not always send patients in the same order
+        # This temporary solution works only when you do not add a new Patient in your account.
+        # HELP NEEDED - If your fork this project, find a way to navigate through the API response without mixing patients when they arrive in a different order. Strangely, Index numbers are not reevaluated by existing sensors when updated.
+        # Sorting patients is ok until you add a new patients and then it mixed up indexes. So the solution is to delete the integration and reinstall it when you want to add a patient.
 
+        patients = sorted(APIreponse["data"], key=lambda x: x["patientId"])
         _LOGGER.debug(
             "Array size : %s",
-            len(APIreponse["data"]),
+            len(patients),
         )
         _LOGGER.debug(
-            "API Response : %s",
+            "List of patients:%s ",
+            patients,
+        )
+
+        return patients
+
+
+class LibreLinkGetGraph:
+    """API class to retriev measurement data.
+
+    Attributes:
+        token: The long life token to authenticate.
+        base_url: For API calls depending on your location
+        Session: aiottp object for the open session
+        patientId: As this API retreive data for a specified patient
+    """
+
+    def __init__(
+        self, token: str, base_url: str, session: aiohttp.ClientSession, patient_id: str
+    ) -> None:
+        """Sample API Client."""
+        self._token = token
+        self._session = session
+        self.connection_url = base_url + CONNECTION_URL
+        self.patient_id = patient_id
+
+    async def async_get_data(self) -> any:
+        """Get data from the API."""
+        APIreponse = await api_wrapper(
+            self._session,
+            method="get",
+            url=self.connection_url,
+            headers={
+                "product": PRODUCT,
+                "version": VERSION_APP,
+                "Application": APPLICATION,
+                "Authorization": "Bearer " + self._token,
+                "patientid": self.patient_id,
+            },
+            data={},
+        )
+
+        _LOGGER.debug(
+            "Get Connection : %s",
             APIreponse,
         )
 
         return APIreponse
 
 
-
-
-
 class LibreLinkApiLogin:
+    """API class to retriev token.
+
+    Attributes:
+        username: of the librelink account
+        password: of the librelink account
+        base_url: For API calls depending on your location
+        Session: aiottp object for the open session
+    """
+
     def __init__(
-        self, username: str, password: str, base_url: str, session: aiohttp.ClientSession
+        self,
+        username: str,
+        password: str,
+        base_url: str,
+        session: aiohttp.ClientSession,
     ) -> None:
         """Sample API Client."""
         self._username = username
@@ -82,7 +142,6 @@ class LibreLinkApiLogin:
             },
             data={"email": self._username, "password": self._password},
         )
-        #        print (reponseLogin["data"]["authTicket"]["token"])
         monToken = reponseLogin["data"]["authTicket"]["token"]
 
         _LOGGER.debug(
@@ -107,7 +166,7 @@ async def api_wrapper(
 ) -> any:
     """Get information from the API."""
     try:
-        async with async_timeout.timeout(10):
+        async with asyncio.timeout(10):
             response = await session.request(
                 method=method,
                 url=url,

@@ -28,20 +28,23 @@ class LibreLinkDevice(CoordinatorEntity):
     def __init__(
         self,
         coordinator: LibreLinkDataUpdateCoordinator,
-        patientId: str,
-        patient: str,
+        index: int,
     ) -> None:
         """Initialize."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, context=index)
+
         # Creating unique IDs using for the device based on the Librelink patient Id.
-        self._attr_unique_id = f"{patientId}"
+        # self.patient = self.coordinator.data[index]["firstName"] + " " + self.coordinator.data[index]["lastName"]
+        # self.patientId = self.coordinator.data[index]["patientId"]
+        self._attr_unique_id = self.coordinator.data[index]["patientId"]
+
         _LOGGER.debug(
             "entity unique id is %s",
             self._attr_unique_id,
         )
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, patientId)},
-            name=patient,
+            identifiers={(DOMAIN, self.coordinator.data[index]["patientId"])},
+            name=self.coordinator.data[index]["firstName"] + " " + self.coordinator.data[index]["lastName"],
             model=VERSION,
             manufacturer=NAME,
         )

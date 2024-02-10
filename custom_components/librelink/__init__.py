@@ -1,16 +1,17 @@
 """Custom integration to integrate LibreLink with Home Assistant.
 """
+
 from __future__ import annotations
+
+import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-import logging
 
-
-from .api import LibreLinkApiClient, LibreLinkApiLogin
-from .const import DOMAIN, BASE_URL
+from .api import LibreLinkApiClient, LibreLinkApiLogin, LibreLinkGetGraph
+from .const import BASE_URL_LIST, COUNTRY, COUNTRY_LIST, DOMAIN
 from .coordinator import LibreLinkDataUpdateCoordinator
 
 PLATFORMS: list[Platform] = [
@@ -26,34 +27,43 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
 
     _LOGGER.debug(
-        "Appel de async_setup_entry entry: entry_id= %s, data= %s, user = %s password = %s",
+        "Appel de async_setup_entry entry: entry_id= %s, data= %s, user = %s password = %s BaseUrl = %s",
         entry.entry_id,
         entry.data,
         entry.data[CONF_USERNAME],
         entry.data[CONF_PASSWORD],
-        entry.data[BASE_URL]
+        BASE_URL_LIST.get(entry.data[COUNTRY])
     )
-
     hass.data.setdefault(DOMAIN, {})
 
-    """    Using the declared API for login based on patient credentials to retreive the bearer Token """
+    #    Using the declared API for login based on patient credentials to retreive the bearer Token
 
     myLibrelinkLogin = LibreLinkApiLogin(
         username=entry.data[CONF_USERNAME],
         password=entry.data[CONF_PASSWORD],
-        base_url= entry.data[BASE_URL],
+        base_url=BASE_URL_LIST.get(entry.data[COUNTRY]),
         session=async_get_clientsession(hass),
     )
 
-    """" Then getting the token. This token is a long life token, so initializaing at HA start up is enough """
+    # Then getting the token. This token is a long life token, so initializaing at HA start up is enough
     sessionToken = await myLibrelinkLogin.async_get_token()
 
-    """ The retrieved token will be used to initiate the coordinator which will be used to update the data on a regular basis """
+    # The retrieved token will be used to initiate the coordinator which will be used to update the data on a regular basis
     myLibrelinkClient = LibreLinkApiClient(
         sessionToken,
         session=async_get_clientsession(hass),
-        base_url=entry.data[BASE_URL]
+        base_url=BASE_URL_LIST.get(entry.data[COUNTRY]),
     )
+
+#Kept for later use in case historical data is needed
+    # myLibreLinkGetGraph = LibreLinkGetGraph(
+    #     sessionToken,
+    #     session=async_get_clientsession(hass),
+    #     base_url=BASE_URL_LIST.get(entry.data[COUNTRY]),
+    #     patient_id="4cd06c35-28d0-11ec-ae45-0242ac110005",
+    # )
+    # graph = await myLibreLinkGetGraph.async_get_data()
+    # print(f"graph {graph}")
 
     hass.data[DOMAIN][entry.entry_id] = coordinator = LibreLinkDataUpdateCoordinator(
         hass=hass,

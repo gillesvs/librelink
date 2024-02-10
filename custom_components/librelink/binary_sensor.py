@@ -1,35 +1,19 @@
 """Binary sensor platform for librelink."""
+
 from __future__ import annotations
 
-from homeassistant.components.binary_sensor import (
-    BinarySensorEntity,
-    BinarySensorEntityDescription,
-)
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_USERNAME
-from homeassistant.core import HomeAssistant
+import logging
 
+from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import LibreLinkDataUpdateCoordinator
 from .device import LibreLinkDevice
 
-import logging
-
 _LOGGER = logging.getLogger(__name__)
-
-
-# BinarySensorDescription = (
-#     BinarySensorEntityDescription(
-#         key="isHigh",
-#         name="Is High",
-#     ),
-#     BinarySensorEntityDescription(
-#         key="isLow",
-#         name="Is Low",
-#     ),
-# )
 
 
 async def async_setup_entry(
@@ -38,41 +22,31 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ):
     """Set up the binary_sensor platform."""
+
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    # usermail = (config_entry.data[CONF_USERNAME]).split("@")
-    # username = usermail[0]
 
     # to manage multiple patients, the API return an array of patients in "data". So we loop in the array
     # and create as many devices and sensors as we do have patients.
     sensors = []
-    for index, patients in enumerate(coordinator.data["data"]):
-        patient = patients["firstName"] + " " + patients["lastName"]
-        patientId = patients["patientId"]
-        #        print(f"patient : {patient}")
-        sensors.extend( [
-            LibreLinkBinarySensor(
-                coordinator,
-                patients,
-                patientId,
-                patient,
-                index,
-#                config_entry.entry_id,
-                key="isHigh",
-                name= "Is High",
-            ),
-            LibreLinkBinarySensor(
-                coordinator,
-                patients,
-                patientId,
-                patient,
-                index,
-#                config_entry.entry_id,
-                key="isLow",
-                name="Is Low",
-            ),
-        ])
+    # Loop through list of patients which are under "Data"
+    for index, patients in enumerate(coordinator.data):
+        sensors.extend(
+            [
+                LibreLinkBinarySensor(
+                    coordinator,
+                    index,
+                    key="isHigh",
+                    name="Is High",
+                ),
+                LibreLinkBinarySensor(
+                    coordinator,
+                    index,
+                    key="isLow",
+                    name="Is Low",
+                ),
+            ]
+        )
     async_add_entities(sensors)
-
 
 
 class LibreLinkBinarySensor(LibreLinkDevice, BinarySensorEntity):
@@ -81,32 +55,32 @@ class LibreLinkBinarySensor(LibreLinkDevice, BinarySensorEntity):
     def __init__(
         self,
         coordinator: LibreLinkDataUpdateCoordinator,
-        patients,
-        patientId: str,
-        patient: str,
         index: int,
         key: str,
         name: str,
     ) -> None:
         """Initialize the device class."""
-        super().__init__(
-            coordinator, patientId, patient)
+        super().__init__(coordinator, index)
 
         self.key = key
-        self.patients = patients
-        self.patientId = patientId
+        self.patients = (
+            coordinator.data[index]["firstName"]
+            + " "
+            + coordinator.data[index]["lastName"]
+        )
+        self.patientId = self.coordinator.data[index]["patientId"]
         self.index = index
         self._attr_name = name
+        self.coordinator = coordinator
 
+    # define unique_id based on patient id and sensor key
     @property
-    def unique_id(self):
-        return f"{self.patientId}_{self.key}"#_{self.index}"
+    def unique_id(self) -> str:
+        """Return a unique id for the sensor."""
+        return f"{self.coordinator.data[self.index]['patientId']}_{self.key}"
 
     # define state based on the entity_description key
     @property
     def is_on(self) -> bool:
         """Return true if the binary_sensor is on."""
-        # return self.coordinator.data["data"][self.index]["glucoseMeasurement"][
-        return self.patients["glucoseMeasurement"][
-            self.key
-        ]
+        return self.coordinator.data[self.index]["glucoseMeasurement"][self.key]

@@ -1,22 +1,23 @@
 """Adds config flow for LibreLink."""
+
 from __future__ import annotations
 
+import logging
+
 import voluptuous as vol
+
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_UNIT_OF_MEASUREMENT, CONF_URL, CONF_COUNTRY
-from homeassistant.helpers import selector, config_validation as cv
+from homeassistant.const import CONF_PASSWORD, CONF_UNIT_OF_MEASUREMENT, CONF_USERNAME
+from homeassistant.helpers import config_validation as cv, selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
-from homeassistant.core import callback
 
 from .api import (
-    LibreLinkApiLogin,
     LibreLinkApiAuthenticationError,
     LibreLinkApiCommunicationError,
     LibreLinkApiError,
+    LibreLinkApiLogin,
 )
-from .const import DOMAIN, LOGGER, MMOL_L, MG_DL, BASE_URL_LIST, BASE_URL_DEFAULT, BASE_URL
-
-import logging
+from .const import BASE_URL_LIST, COUNTRY, COUNTRY_LIST, DOMAIN, LOGGER, MG_DL, MMOL_L
 
 # GVS: Init logger
 _LOGGER = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class LibreLinkFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 await self._test_credentials(
                     username=user_input[CONF_USERNAME],
                     password=user_input[CONF_PASSWORD],
-                    base_url=user_input[BASE_URL],
+                    base_url=BASE_URL_LIST.get(user_input[COUNTRY]),
                 )
             except LibreLinkApiAuthenticationError as exception:
                 LOGGER.warning(exception)
@@ -72,18 +73,23 @@ class LibreLinkFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                             type=selector.TextSelectorType.PASSWORD
                         ),
                     ),
-
-                    vol.Required(BASE_URL, description = "url by country", default=(BASE_URL_LIST[0])): vol.In(BASE_URL_LIST),
-
-
-                }),
-
+                    vol.Required(
+                        COUNTRY,
+                        description="Country",
+                        default=(COUNTRY_LIST[0]),
+                    ): vol.In(COUNTRY_LIST),
+                    vol.Required(
+                        CONF_UNIT_OF_MEASUREMENT,
+                        default=(MG_DL),
+                    ): vol.In({MG_DL, MMOL_L}),
+                }
+            ),
             errors=_errors,
         )
 
-
-
-    async def _test_credentials(self, username: str, password: str, base_url: str) -> None:
+    async def _test_credentials(
+        self, username: str, password: str, base_url: str
+    ) -> None:
         """Validate credentials."""
         client = LibreLinkApiLogin(
             username=username,
@@ -94,55 +100,3 @@ class LibreLinkFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         await client.async_get_token()
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> LibreLinkOptionsFlowHandler:
-        """Get the options flow for this handler."""
-        return LibreLinkOptionsFlowHandler(config_entry)
-
-    # test credential using the login API which enables to retrieve a token
-    # Token is retreived in the __init__.py has it needs to be load at each reboot.
-
-
-class LibreLinkOptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle a option flow for Dexcom."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
-    async def async_step_init(self, user_input=None):
-        """Handle options flow."""
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-
-        data_schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_UNIT_OF_MEASUREMENT,
-                    default=self.config_entry.options.get(
-                        CONF_UNIT_OF_MEASUREMENT, MG_DL
-                    ),
-                ): vol.In({MG_DL, MMOL_L}),
-            }
-        )
-        return self.async_show_form(step_id="init", data_schema=data_schema)
-
-
-        # all_repos = {e.entity_id: e.original_name for e in entries}
-        # repo_map = {e.entity_id: e for e in entries}
-
-
-        # options_schema = vol.Schema(
-        #     {
-        #         vol.Optional("repos", default=list(all_repos.keys())): cv.multi_select(
-        #             all_repos
-        #         ),
-        #         vol.Optional(CONF_PATH): cv.string,
-        #         vol.Optional(CONF_NAME): cv.string,
-        #     }
-        # )
-        # return self.async_show_form(
-        #     step_id="init", data_schema=options_schema, errors=errors

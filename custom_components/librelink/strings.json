@@ -7,7 +7,9 @@
         "description": "Documentation: https://github.com/gillesvs/librelink",
         "data": {
           "username": "Mail",
-          "password": "Password"
+          "password": "Password",
+          "Country": "Select your region",
+          "unit_of_measurement": "Unit for glucose measurement"
         }
       }
     },

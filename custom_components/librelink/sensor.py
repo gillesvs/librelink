@@ -1,27 +1,28 @@
 """Sensor platform for LibreLink."""
 
-
 from __future__ import annotations
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_USERNAME, CONF_UNIT_OF_MEASUREMENT
-from homeassistant.core import HomeAssistant
+
 from datetime import datetime
+import logging
 import time
-from .device import LibreLinkDevice
+
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
 from .const import (
     DOMAIN,
-    GLUCOSE_VALUE_ICON,
     GLUCOSE_TREND_ICON,
     GLUCOSE_TREND_MESSAGE,
+    GLUCOSE_VALUE_ICON,
     MG_DL,
-    MMOL_L,
     MMOL_DL_TO_MG_DL,
+    MMOL_L,
 )
 from .coordinator import LibreLinkDataUpdateCoordinator
-
-import logging
+from .device import LibreLinkDevice
 
 # GVS: Tuto pour ajouter des log
 _LOGGER = logging.getLogger(__name__)
@@ -40,9 +41,9 @@ async def async_setup_entry(
     """Set up the sensor platform."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-# If custom unit of measurement is selectid it is initialized, otherwise MG/DL is used
+    # If custom unit of measurement is selectid it is initialized, otherwise MG/DL is used
     try:
-        custom_unit = config_entry.options[CONF_UNIT_OF_MEASUREMENT]
+        custom_unit = config_entry.data[CONF_UNIT_OF_MEASUREMENT]
     except KeyError:
         custom_unit = MG_DL
 
@@ -51,52 +52,34 @@ async def async_setup_entry(
     # we create an array of entities then create entities.
 
     sensors = []
-    for index, patients in enumerate(coordinator.data["data"]):
-        patient = patients["firstName"] + " " + patients["lastName"]
-        patientId = patients["patientId"]
-        #        print(f"patient : {patient}")
+    for index, patients in enumerate(coordinator.data):
+
         sensors.extend(
             [
                 LibreLinkSensor(
                     coordinator,
-                    patients,
-                    patientId,
-                    patient,
                     index,
-                    config_entry.entry_id,
                     "value",  # key
                     "Glucose Measurement",  # name
                     custom_unit,
                 ),
                 LibreLinkSensor(
                     coordinator,
-                    patients,
-                    patientId,
-                    patient,
                     index,
-                    config_entry.entry_id,
                     "trend",  # key
                     "Trend",  # name
                     custom_unit,
                 ),
                 LibreLinkSensor(
                     coordinator,
-                    patients,
-                    patientId,
-                    patient,
                     index,
-                    config_entry.entry_id,
                     "sensor",  # key
                     "Active Sensor",  # name
                     "days",  # uom
                 ),
                 LibreLinkSensor(
                     coordinator,
-                    patients,
-                    patientId,
-                    patient,
                     index,
-                    config_entry.entry_id,
                     "delay",  # key
                     "Minutes since update",  # name
                     "min",  # uom
@@ -113,26 +96,36 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
     def __init__(
         self,
         coordinator: LibreLinkDataUpdateCoordinator,
-        patients,
-        patientId: str,
-        patient: str,
         index,
-        entry_id: str,
         key: str,
         name: str,
         uom,
     ) -> None:
         """Initialize the device class."""
-        super().__init__(coordinator, patientId, patient)
+        super().__init__(coordinator, index)
         self.uom = uom
-        print(f"index : {index}")
-        self.patients = patients
-        self.patientId = patientId
-        print(f"PatientId : {self.patientId}")
-        self._attr_unique_id = f"{patientId}_{key}"
+        self.patients = (
+            self.coordinator.data[index]["firstName"]
+            + " "
+            + self.coordinator.data[index]["lastName"]
+        )
+        self.patientId = self.coordinator.data[index]["patientId"]
+        self._attr_unique_id = f"{self.coordinator.data[index]['patientId']}_{key}"
         self._attr_name = name
         self.index = index
         self.key = key
+
+        # res = None
+#         for i, patient in enumerate(self.coordinator.data):
+# #        for i in range(len(patients)):
+#             if patient.get("patientId") == "e4a78e05-0780-11ec-ad7d-0242ac110005":
+#                 res = i
+#                 break
+
+#         _LOGGER.debug(
+#             "index : %s",
+#             res,
+#         )
 
     @property
     def native_value(self):
@@ -144,21 +137,17 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
             if self.key == "value":
                 if self.uom == MG_DL:
                     result = int(
-                        (
-                            self.coordinator.data["data"][self.index][
-                                "glucoseMeasurement"
-                            ]["ValueInMgPerDl"]
-                        )
+                        self.coordinator.data[self.index]["glucoseMeasurement"][
+                            "ValueInMgPerDl"
+                        ]
                     )
                 if self.uom == MMOL_L:
                     result = round(
                         float(
-                            (
-                                self.coordinator.data["data"][self.index][
-                                    "glucoseMeasurement"
-                                ]["ValueInMgPerDl"]
-                                / MMOL_DL_TO_MG_DL
-                            )
+                            self.coordinator.data[self.index][
+                                "glucoseMeasurement"
+                            ]["ValueInMgPerDl"]
+                            / MMOL_DL_TO_MG_DL
                         ),
                         1,
                     )
@@ -166,7 +155,7 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
             elif self.key == "trend":
                 result = GLUCOSE_TREND_MESSAGE[
                     (
-                        self.coordinator.data["data"][self.index]["glucoseMeasurement"][
+                        self.coordinator.data[self.index]["glucoseMeasurement"][
                             "TrendArrow"
                         ]
                     )
@@ -177,7 +166,7 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
                 result = int(
                     (
                         time.time()
-                        - (self.coordinator.data["data"][self.index]["sensor"]["a"])
+                        - (self.coordinator.data[self.index]["sensor"]["a"])
                     )
                     / 86400
                 )
@@ -187,13 +176,13 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
                     (
                         datetime.now()
                         - datetime.strptime(
-                            self.coordinator.data["data"][self.index][
+                            self.coordinator.data[self.index][
                                 "glucoseMeasurement"
                             ]["Timestamp"],
                             "%m/%d/%Y %I:%M:%S %p",
                         )
                     ).total_seconds()
-                    / 60 # convert seconds in minutes
+                    / 60  # convert seconds in minutes
                 )
 
             return result
@@ -203,11 +192,11 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
     def icon(self):
         """Return the icon for the frontend."""
 
-        if self.coordinator.data["data"][self.index]:
+        if self.coordinator.data[self.index]:
             if self.key in ["value", "trend"]:
                 return GLUCOSE_TREND_ICON[
                     (
-                        self.coordinator.data["data"][self.index]["glucoseMeasurement"][
+                        self.coordinator.data[self.index]["glucoseMeasurement"][
                             "TrendArrow"
                         ]
                     )
@@ -219,7 +208,7 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
     def unit_of_measurement(self):
         """Only used for glucose measurement and librelink sensor delay since update."""
 
-        if self.coordinator.data["data"][self.index]:
+        if self.coordinator.data[self.index]:
             if self.key in ["sensor", "value"]:
                 return self.uom
         return None
@@ -228,15 +217,15 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
     def extra_state_attributes(self):
         """Return the state attributes of the librelink sensor."""
         result = None
-        if self.coordinator.data["data"][self.index]:
+        if self.coordinator.data[self.index]:
             if self.key == "sensor":
                 result = {
-                    "Serial number": f"{self.coordinator.data['data'][self.index]['sensor']['pt']} {self.coordinator.data['data'][self.index]['sensor']['sn']}",
+                    "Serial number": f"{self.coordinator.data[self.index]['sensor']['pt']} {self.coordinator.data[self.index]['sensor']['sn']}",
                     "Activation date": datetime.fromtimestamp(
-                        (self.coordinator.data["data"][self.index]["sensor"]["a"])
+                        (self.coordinator.data[self.index]["sensor"]["a"])
                     ),
-                    "patientId": self.coordinator.data["data"][self.index]["patientId"],
-                    "Patient": f"{(self.coordinator.data['data'][self.index]['lastName']).upper()} {self.coordinator.data['data'][self.index]['firstName']}",
+                    "patientId": self.coordinator.data[self.index]["patientId"],
+                    "Patient": f"{(self.coordinator.data[self.index]['lastName']).upper()} {self.coordinator.data[self.index]['firstName']}",
                 }
 
             return result
