@@ -9,7 +9,7 @@
 [integration_librelink]: https://github.com/gillesvs/librelink.git
 [buymecoffee]: https://www.buymeacoffee.com/gillesvs
 
-**This integration will set up the following platforms.**
+**This integration will set up the following platforms for each patient linked to the librelink account.**
 
 Platform | Description
 -- | --
