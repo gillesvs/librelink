@@ -34,14 +34,16 @@ https://github.com/gillesvs/librelink/blob/main/custom_components/librelink/mini
 
 ## Installation
 
-1. Add this repository as a custom repository in HACS
+1. Add this repository URL as a custom repository in HACS
 2. Restart Home Assistant
 3. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Librelink"
 
 ## Configuration is done in the UI
 
-- Using username (mail) and password.
+- Using username (mail) and password of the librelink account.
 - A token will be retreived for the duration of the HA session.
+
+User must have accepted Abbott user agreement in the librelink app for the integration to work.
 
 ## Contributions are welcome!
 
