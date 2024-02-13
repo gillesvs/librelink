@@ -45,6 +45,12 @@ https://github.com/gillesvs/librelink/blob/main/custom_components/librelink/mini
 
 User must have accepted Abbott user agreement in the librelink app for the integration to work.
 
+## Token and confidentiality
+
+When reporting an issue, I will need the log file to understand the problem as, in most cases, it will be linked to the API Response shown in the debug log.
+BUT: API response comes at a all WITH the token at the end. So two options, you send me the log file directly to my email: gilles.vanschendel@gmail.com or you erase the Token and the value associated in the log file. Librelink token have a 6 month life.
+I will erase the token from the log automatically in a future release to avoid this unconvenience.
+
 ## Contributions are welcome!
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
