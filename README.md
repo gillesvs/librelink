@@ -40,6 +40,8 @@ https://github.com/gillesvs/librelink/blob/main/custom_components/librelink/mini
 
 ## Configuration is done in the UI
 
+You need à librelinkUp account to use this integration
+
 - Using username (mail) and password of the librelinkUp account.
 - A token will be retreived for the duration of the HA session.
 
