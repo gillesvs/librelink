@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Create a bug to help us improve
-title: ''
+title: 'Issue identified : '
 labels: ''
 assignees: gillesvs
 
