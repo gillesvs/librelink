@@ -40,7 +40,7 @@ https://github.com/gillesvs/librelink/blob/main/custom_components/librelink/mini
 
 ## Configuration is done in the UI
 
-- Using username (mail) and password of the librelink account.
+- Using username (mail) and password of the librelinkUp account.
 - A token will be retreived for the duration of the HA session.
 
 User must have accepted Abbott user agreement in the librelink app for the integration to work.
