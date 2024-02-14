@@ -3,7 +3,7 @@
 [![Validate with Hassfest](https://github.com/gillesvs/librelink/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/gillesvs/librelink/actions/workflows/hassfest.yaml)
 [![Validate with HACS](https://github.com/gillesvs/librelink/actions/workflows/validate.yaml/badge.svg)](https://github.com/gillesvs/librelink/actions/workflows/validate.yaml)
 
-# Librelink Integration for Home Assistant 
+# LibrelinkUp Integration for Home Assistant 
 
 
 [integration_librelink]: https://github.com/gillesvs/librelink.git
