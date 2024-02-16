@@ -29,7 +29,7 @@ async def async_setup_entry(
     # and create as many devices and sensors as we do have patients.
     sensors = []
     # Loop through list of patients which are under "Data"
-    for index, patients in enumerate(coordinator.data):
+    for index, _ in enumerate(coordinator.data):
         sensors.extend(
             [
                 LibreLinkBinarySensor(

@@ -8,7 +8,14 @@ import socket
 
 import aiohttp
 
-from .const import APPLICATION, CONNECTION_URL, LOGIN_URL, PRODUCT, VERSION_APP
+from .const import (
+    APPLICATION,
+    CONNECTION_URL,
+    LOGIN_URL,
+    PRODUCT,
+    VERSION_APP,
+    API_TIME_OUT_SECONDS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,13 +57,20 @@ class LibreLinkApiClient:
         # HELP NEEDED - If your fork this project, find a way to navigate through the API response without mixing patients when they arrive in a different order. Strangely, Index numbers are not reevaluated by existing sensors when updated.
         # Sorting patients is ok until you add a new patients and then it mixed up indexes. So the solution is to delete the integration and reinstall it when you want to add a patient.
 
-        patients = sorted(APIreponse["data"], key=lambda x: x["patientId"])
         _LOGGER.debug(
-            "Array size : %s",
-            len(patients),
+            "Return API Status:%s ",
+            APIreponse["status"],
         )
+
+        # API status return 0 if everything goes well.
+        if APIreponse["status"] == 0:
+            patients = sorted(APIreponse["data"], key=lambda x: x["patientId"])
+        else:
+            patients = APIreponse  # to be used for debugging in status not ok
+
         _LOGGER.debug(
-            "List of patients:%s ",
+            "Number of patients : %s and patient list %s",
+            len(patients),
             patients,
         )
 
@@ -142,12 +156,17 @@ class LibreLinkApiLogin:
             },
             data={"email": self._username, "password": self._password},
         )
+        _LOGGER.debug(
+            "Login status : %s",
+            reponseLogin["status"],
+        )
+        if reponseLogin["status"]==2:
+            raise LibreLinkApiAuthenticationError(
+                "Invalid credentials",
+            )
+
         monToken = reponseLogin["data"]["authTicket"]["token"]
 
-        _LOGGER.debug(
-            "Token : '%s''",
-            monToken,
-        )
         return monToken
 
 
@@ -166,13 +185,14 @@ async def api_wrapper(
 ) -> any:
     """Get information from the API."""
     try:
-        async with asyncio.timeout(10):
+        async with asyncio.timeout(API_TIME_OUT_SECONDS):
             response = await session.request(
                 method=method,
                 url=url,
                 headers=headers,
                 json=data,
             )
+            _LOGGER.debug("response.status: %s", response.status)
             if response.status in (401, 403):
                 raise LibreLinkApiAuthenticationError(
                     "Invalid credentials",
@@ -196,10 +216,16 @@ async def api_wrapper(
 class LibreLinkApiError(Exception):
     """Exception to indicate a general API error."""
 
+    _LOGGER.debug("Exception: general API error")
+
 
 class LibreLinkApiCommunicationError(LibreLinkApiError):
     """Exception to indicate a communication error."""
 
+    _LOGGER.debug("Exception: communication error")
+
 
 class LibreLinkApiAuthenticationError(LibreLinkApiError):
     """Exception to indicate an authentication error."""
+
+    _LOGGER.debug("Exception: authentication error")

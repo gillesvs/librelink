@@ -5,13 +5,16 @@ LOGGER: Logger = getLogger(__package__)
 
 NAME = "LibreLink"
 DOMAIN = "librelink"
-VERSION = "1.1.7"
+VERSION = "1.2.1"
 ATTRIBUTION = "Data provided by https://libreview.com"
 LOGIN_URL = "/llu/auth/login"
 CONNECTION_URL = "/llu/connections"
-COUNTRY="Country"
-COUNTRY_LIST = ["Global","Russia"]
-BASE_URL_LIST = {"Global":"https://api.libreview.io","Russia":"https://api.libreview.ru"}
+COUNTRY = "Country"
+COUNTRY_LIST = ["Global", "Russia"]
+BASE_URL_LIST = {
+    "Global": "https://api.libreview.io",
+    "Russia": "https://api.libreview.ru",
+}
 PRODUCT = "llu.android"
 VERSION_APP = "4.7"
 APPLICATION = "application/json"
@@ -34,4 +37,15 @@ MMOL_L = "mmol/L"
 MG_DL = "mg/dL"
 MMOL_DL_TO_MG_DL = 18
 REFRESH_RATE_MIN = 1
+API_TIME_OUT_SECONDS = 20
 
+# AE: "api-ae.libreview.io",
+# AP: "api-ap.libreview.io",
+# AU: "api-au.libreview.io",
+# CA: "api-ca.libreview.io",
+# DE: "api-de.libreview.io",
+# EU: "api-eu.libreview.io",
+# EU2: "api-eu2.libreview.io",
+# FR: "api-fr.libreview.io",
+# JP: "api-jp.libreview.io",
+# US: "api-us.libreview.io",

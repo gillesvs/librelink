@@ -1,5 +1,4 @@
-"""Custom integration to integrate LibreLink with Home Assistant.
-"""
+"""Custom integration to integrate LibreLink with Home Assistant."""
 
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import LibreLinkApiClient, LibreLinkApiLogin, LibreLinkGetGraph
-from .const import BASE_URL_LIST, COUNTRY, COUNTRY_LIST, DOMAIN
+from .const import BASE_URL_LIST, COUNTRY, DOMAIN
 from .coordinator import LibreLinkDataUpdateCoordinator
 
 PLATFORMS: list[Platform] = [
@@ -27,12 +26,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
 
     _LOGGER.debug(
-        "Appel de async_setup_entry entry: entry_id= %s, data= %s, user = %s password = %s BaseUrl = %s",
+        "Appel de async_setup_entry entry: entry_id= %s, data= %s, user = %s BaseUrl = %s",
         entry.entry_id,
         entry.data,
         entry.data[CONF_USERNAME],
-        entry.data[CONF_PASSWORD],
-        BASE_URL_LIST.get(entry.data[COUNTRY])
+        #        entry.data[CONF_PASSWORD],
+        BASE_URL_LIST.get(entry.data[COUNTRY]),
     )
     hass.data.setdefault(DOMAIN, {})
 
@@ -55,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         base_url=BASE_URL_LIST.get(entry.data[COUNTRY]),
     )
 
-#Kept for later use in case historical data is needed
+    # Kept for later use in case historical data is needed
     # myLibreLinkGetGraph = LibreLinkGetGraph(
     #     sessionToken,
     #     session=async_get_clientsession(hass),

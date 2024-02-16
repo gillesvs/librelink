@@ -192,7 +192,7 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
     def icon(self):
         """Return the icon for the frontend."""
 
-        if self.coordinator.data[self.index]:
+        if self.coordinator.data[self.index]["glucoseMeasurement"]["TrendArrow"]:
             if self.key in ["value", "trend"]:
                 return GLUCOSE_TREND_ICON[
                     (

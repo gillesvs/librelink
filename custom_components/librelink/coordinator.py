@@ -6,17 +6,10 @@ from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import (
-    LibreLinkApiClient,
-    LibreLinkApiAuthenticationError,
-    LibreLinkApiError,
-)
+from .api import LibreLinkApiAuthenticationError, LibreLinkApiClient, LibreLinkApiError
 from .const import DOMAIN, LOGGER, REFRESH_RATE_MIN
 
 
