@@ -9,12 +9,12 @@
 [integration_librelink]: https://github.com/gillesvs/librelink.git
 [buymecoffee]: https://www.buymeacoffee.com/gillesvs
 
-**This integration will set up the following platforms for each patient linked to the librelink account.**
+**This integration will set up the following platforms for each patient linked to the librelinkUp account.**
 
 Platform | Description
 -- | --
 
-`sensor` | Show info from Librelink API.
+`sensor` | Show info from LibrelinkUp API.
 - Active Sensor (in days) : All information about your sensor. State is number of days since activation.
 - Glucose Measurement (in mg/dL) : Measured value every minute.
 - Glucose Trend : in plain text + icon.
@@ -40,7 +40,7 @@ https://github.com/gillesvs/librelink/blob/main/custom_components/librelink/mini
 
 ## Configuration is done in the UI
 
-You need à librelinkUp account to use this integration
+You need a librelinkUp account to use this integration
 User must have accepted Abbott user agreement in the librelinkUp app for the integration to work.
 
 - Use username (mail) and password of the librelinkUp account.
