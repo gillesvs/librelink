@@ -163,13 +163,16 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
                 ]
 
             elif self.key == "sensor":
-                result = int(
-                    (
-                        time.time()
-                        - (self.coordinator.data[self.index]["sensor"]["a"])
+               if self.coordinator.data[self.index]["sensor"] != None:
+                    result = int(
+                        (
+                            time.time()
+                            - (self.coordinator.data[self.index]["sensor"]["a"])
+                        )
+                        / 86400
                     )
-                    / 86400
-                )
+               else:
+                   result = "N/A"
 
             elif self.key == "delay":
                 result = int(
@@ -219,14 +222,24 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
         result = None
         if self.coordinator.data[self.index]:
             if self.key == "sensor":
-                result = {
-                    "Serial number": f"{self.coordinator.data[self.index]['sensor']['pt']} {self.coordinator.data[self.index]['sensor']['sn']}",
-                    "Activation date": datetime.fromtimestamp(
-                        (self.coordinator.data[self.index]["sensor"]["a"])
-                    ),
-                    "patientId": self.coordinator.data[self.index]["patientId"],
-                    "Patient": f"{(self.coordinator.data[self.index]['lastName']).upper()} {self.coordinator.data[self.index]['firstName']}",
+                if self.coordinator.data[self.index]["sensor"] != None:
+                    result = {
+                        "Serial number": f"{self.coordinator.data[self.index]['sensor']['pt']} {self.coordinator.data[self.index]['sensor']['sn']}",
+                        "Activation date": datetime.fromtimestamp(
+                            (self.coordinator.data[self.index]["sensor"]["a"])
+                        ),
+                        "patientId": self.coordinator.data[self.index]["patientId"],
+                        "Patient": f"{(self.coordinator.data[self.index]['lastName']).upper()} {self.coordinator.data[self.index]['firstName']}",
                 }
+                else:
+                    result = {
+                        "Serial number": "N/A",
+                        "Activation date": "N/A",
+                        "patientId": self.coordinator.data[self.index]["patientId"],
+                        "Patient": f"{(self.coordinator.data[self.index]['lastName']).upper()} {self.coordinator.data[self.index]['firstName']}",
+                }
+
+
 
             return result
         return result
