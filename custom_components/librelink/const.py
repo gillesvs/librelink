@@ -5,15 +5,16 @@ LOGGER: Logger = getLogger(__package__)
 
 NAME = "LibreLink"
 DOMAIN = "librelink"
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 ATTRIBUTION = "Data provided by https://libreview.com"
 LOGIN_URL = "/llu/auth/login"
 CONNECTION_URL = "/llu/connections"
 COUNTRY = "Country"
-COUNTRY_LIST = ["Global", "Russia"]
+COUNTRY_LIST = ["Global", "Russia", "Canada"]
 BASE_URL_LIST = {
     "Global": "https://api.libreview.io",
     "Russia": "https://api.libreview.ru",
+    "Canada": "https://api-ca.libreview.io",
 }
 PRODUCT = "llu.android"
 VERSION_APP = "4.7"

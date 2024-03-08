@@ -9,12 +9,12 @@ import socket
 import aiohttp
 
 from .const import (
+    API_TIME_OUT_SECONDS,
     APPLICATION,
     CONNECTION_URL,
     LOGIN_URL,
     PRODUCT,
     VERSION_APP,
-    API_TIME_OUT_SECONDS,
 )
 
 _LOGGER = logging.getLogger(__name__)

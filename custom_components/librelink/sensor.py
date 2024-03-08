@@ -115,25 +115,14 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
         self.index = index
         self.key = key
 
-        # res = None
-#         for i, patient in enumerate(self.coordinator.data):
-# #        for i in range(len(patients)):
-#             if patient.get("patientId") == "e4a78e05-0780-11ec-ad7d-0242ac110005":
-#                 res = i
-#                 break
-
-#         _LOGGER.debug(
-#             "index : %s",
-#             res,
-#         )
-
     @property
     def native_value(self):
         """Return the native value of the sensor."""
 
         result = None
 
-        if self.patients:
+        # to avoid failing requests if there is no activated sensor for a patient.
+        if self.coordinator.data[self.index] is not None:
             if self.key == "value":
                 if self.uom == MG_DL:
                     result = int(
@@ -163,7 +152,7 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
                 ]
 
             elif self.key == "sensor":
-               if self.coordinator.data[self.index]["sensor"] != None:
+                if self.coordinator.data[self.index]["sensor"] is not None:
                     result = int(
                         (
                             time.time()
@@ -171,8 +160,6 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
                         )
                         / 86400
                     )
-               else:
-                   result = "N/A"
 
             elif self.key == "delay":
                 result = int(
@@ -222,24 +209,15 @@ class LibreLinkSensor(LibreLinkDevice, SensorEntity):
         result = None
         if self.coordinator.data[self.index]:
             if self.key == "sensor":
-                if self.coordinator.data[self.index]["sensor"] != None:
+                if self.coordinator.data[self.index]["sensor"] is not None:
                     result = {
                         "Serial number": f"{self.coordinator.data[self.index]['sensor']['pt']} {self.coordinator.data[self.index]['sensor']['sn']}",
                         "Activation date": datetime.fromtimestamp(
-                            (self.coordinator.data[self.index]["sensor"]["a"])
+                            self.coordinator.data[self.index]["sensor"]["a"]
                         ),
                         "patientId": self.coordinator.data[self.index]["patientId"],
                         "Patient": f"{(self.coordinator.data[self.index]['lastName']).upper()} {self.coordinator.data[self.index]['firstName']}",
-                }
-                else:
-                    result = {
-                        "Serial number": "N/A",
-                        "Activation date": "N/A",
-                        "patientId": self.coordinator.data[self.index]["patientId"],
-                        "Patient": f"{(self.coordinator.data[self.index]['lastName']).upper()} {self.coordinator.data[self.index]['firstName']}",
-                }
-
-
+                    }
 
             return result
         return result
