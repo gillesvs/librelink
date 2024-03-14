@@ -1,20 +1,41 @@
 """Constants for librelink."""
+
 from logging import Logger, getLogger
 
 LOGGER: Logger = getLogger(__package__)
 
 NAME = "LibreLink"
 DOMAIN = "librelink"
-VERSION = "1.2.2"
+VERSION = "1.2.3"
 ATTRIBUTION = "Data provided by https://libreview.com"
 LOGIN_URL = "/llu/auth/login"
 CONNECTION_URL = "/llu/connections"
 COUNTRY = "Country"
-COUNTRY_LIST = ["Global", "Russia", "Canada"]
+COUNTRY_LIST = [
+    "Global",
+    "Arab Emirates",
+    "Asia Pacific",
+    "Australia",
+    "Canada",
+    "Germany",
+    "Europe",
+    "France",
+    "Japan",
+    "Russia",
+    "United States",
+]
 BASE_URL_LIST = {
     "Global": "https://api.libreview.io",
-    "Russia": "https://api.libreview.ru",
+    "Arab Emirates": "https://api-ae.libreview.io",
+    "Asia Pacific": "https://api-ap.libreview.io",
+    "Australia": "https://api-au.libreview.io",
     "Canada": "https://api-ca.libreview.io",
+    "Germany": "https://api-de.libreview.io",
+    "Europe": "https://api-eu.libreview.io",
+    "France": "https://api-fr.libreview.io",
+    "Japan": "https://api-jp.libreview.io",
+    "Russia": "https://api.libreview.ru",
+    "United States": "https://api-us.libreview.io",
 }
 PRODUCT = "llu.android"
 VERSION_APP = "4.7"
@@ -39,14 +60,3 @@ MG_DL = "mg/dL"
 MMOL_DL_TO_MG_DL = 18
 REFRESH_RATE_MIN = 1
 API_TIME_OUT_SECONDS = 20
-
-# AE: "api-ae.libreview.io",
-# AP: "api-ap.libreview.io",
-# AU: "api-au.libreview.io",
-# CA: "api-ca.libreview.io",
-# DE: "api-de.libreview.io",
-# EU: "api-eu.libreview.io",
-# EU2: "api-eu2.libreview.io",
-# FR: "api-fr.libreview.io",
-# JP: "api-jp.libreview.io",
-# US: "api-us.libreview.io",
