@@ -10,6 +10,7 @@
 [buymecoffee]: https://www.buymeacoffee.com/gillesvs
 
 **This integration will set up the following platforms for each patient linked to the librelinkUp account.**
+**This integration ONLY WORKS WITH LIBRELINKUP account. not Librelink**
 
 Platform | Description
 -- | --
