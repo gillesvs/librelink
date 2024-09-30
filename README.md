@@ -9,7 +9,7 @@
 [integration_librelink]: https://github.com/gillesvs/librelink.git
 [buymecoffee]: https://www.buymeacoffee.com/gillesvs
 
-**This integration will set up the following platforms for each patient linked to the librelinkUp account.**
+**This integration will set up the following platforms for each patient linked to the librelinkUp account. (Not librelink)**
 
 Platform | Description
 -- | --
@@ -34,8 +34,7 @@ https://github.com/gillesvs/librelink/blob/main/custom_components/librelink/mini
 
 ## Installation
 
-1. Add this repository URL as a custom repository in HACS
-2. Restart Home Assistant
+1. Add this integration using HACS
 3. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Librelink"
 
 ## Configuration is done in the UI
@@ -46,6 +45,13 @@ User must have accepted Abbott user agreement in the librelinkUp app for the int
 - Use username (mail) and password of the librelinkUp account.
 - A token will be retreived for the duration of the HA session.
 
+## Troubleshooting
+
+check status at https://status.freestyle.abbott/
+
+- HTTP error 401 - workarounds - relogin at librelinkup application to accept new agreement (may be password update of librelinkup account needed, i have done both on same time)
+- on android redmi note 10s, redmi 9c - after approximately 60 days master cant send data to abbot cloud as much as 50-70% of active time - solution - clean application data\reinstall app > relogin > rescan sensor
+- on android, no data or data from master renews in cloud with significant lag - i think that possible solution is to relogin on master application to accept new licence agreement
 
 ## Contributions are welcome!
 
