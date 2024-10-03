@@ -57,6 +57,6 @@ check status at https://status.freestyle.abbott/
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
 
-***
+**
 
 <a href="https://www.buymeacoffee.com/roan7dxbbb" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
