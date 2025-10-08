@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
+import hashlib
 
 import aiohttp
 
@@ -30,10 +31,12 @@ class LibreLinkApiClient:
     """
 
     def __init__(
-        self, token: str, base_url: str, session: aiohttp.ClientSession
+        self, token: str, accountId: str, base_url: str, session: aiohttp.ClientSession
     ) -> None:
         """Sample API Client."""
         self._token = token
+        # Since only the hashed account id is required in later request, already hash it here 
+        self._hashedAccountId = hashlib.sha256(accountId.encode('utf-8')).hexdigest()
         self._session = session
         self.connection_url = base_url + CONNECTION_URL
 
@@ -48,6 +51,7 @@ class LibreLinkApiClient:
                 "version": VERSION_APP,
                 "Application": APPLICATION,
                 "Authorization": "Bearer " + self._token,
+                "Account-Id": self._hashedAccountId
             },
             data={},
         )
@@ -166,8 +170,9 @@ class LibreLinkApiLogin:
             )
 
         monToken = reponseLogin["data"]["authTicket"]["token"]
+        accountId = reponseLogin["data"]["user"]["id"]
 
-        return monToken
+        return monToken, accountId
 
 
 ################################################################
