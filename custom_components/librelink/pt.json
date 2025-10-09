@@ -1,0 +1,23 @@
+{
+  "title": "Integração LibreLink",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Introduza o seu e-mail e palavra-passe",
+        "description": "Documentação: https://github.com/gillesvs/librelink",
+        "data": {
+          "username": "E-mail",
+          "password": "Palavra-passe"
+        }
+      }
+    },
+    "error": {
+      "auth": "O e-mail ou a palavra-passe estão incorretos.",
+      "connection": "Não foi possível conectar ao servidor.",
+      "unknown": "Ocorreu um erro desconhecido."
+    },
+    "abort": {
+      "already_configured": "O dispositivo já está configurado."
+    }
+  }
+}
