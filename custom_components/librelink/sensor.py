@@ -2,35 +2,30 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-import logging
-import time
-
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
+from homeassistant.const import CONF_UNIT_OF_MEASUREMENT, CONF_USERNAME
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    ATTRIBUTION,
+    CONF_PATIENT_ID,
     DOMAIN,
     GLUCOSE_TREND_ICON,
     GLUCOSE_TREND_MESSAGE,
     GLUCOSE_VALUE_ICON,
-    MG_DL,
-    MMOL_DL_TO_MG_DL,
-    MMOL_L,
+    NAME,
+    VERSION,
 )
 from .coordinator import LibreLinkDataUpdateCoordinator
-from .device import LibreLinkDevice
-
-# GVS: Tuto pour ajouter des log
-_LOGGER = logging.getLogger(__name__)
-
-""" Three sensors are declared:
-    Glucose Value
-    Glucose Trend
-    Sensor days and related sensor attributes"""
+from .units import UNITS_OF_MEASUREMENT, UnitOfMeasurement
 
 
 async def async_setup_entry(
@@ -39,185 +34,201 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ):
     """Set up the sensor platform."""
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = hass.data[DOMAIN][config_entry.data[CONF_USERNAME]]
 
     # If custom unit of measurement is selectid it is initialized, otherwise MG/DL is used
-    try:
-        custom_unit = config_entry.data[CONF_UNIT_OF_MEASUREMENT]
-    except KeyError:
-        custom_unit = MG_DL
+    unit = {u.unit_of_measurement: u for u in UNITS_OF_MEASUREMENT}.get(
+        config_entry.data[CONF_UNIT_OF_MEASUREMENT]
+    )
+    pid = config_entry.data[CONF_PATIENT_ID]
 
     # For each patients, new Device base on patients and
     # using an index as we need to keep the coordinator in the @property to get updates from coordinator
     # we create an array of entities then create entities.
 
-    sensors = []
-    for index, patients in enumerate(coordinator.data):
-
-        sensors.extend(
-            [
-                LibreLinkSensor(
-                    coordinator,
-                    index,
-                    "value",  # key
-                    "Glucose Measurement",  # name
-                    custom_unit,
-                ),
-                LibreLinkSensor(
-                    coordinator,
-                    index,
-                    "trend",  # key
-                    "Trend",  # name
-                    custom_unit,
-                ),
-                LibreLinkSensor(
-                    coordinator,
-                    index,
-                    "sensor",  # key
-                    "Active Sensor",  # name
-                    "days",  # uom
-                ),
-                LibreLinkSensor(
-                    coordinator,
-                    index,
-                    "delay",  # key
-                    "Minutes since update",  # name
-                    "min",  # uom
-                ),
-            ]
-        )
+    sensors = [
+        MeasurementSensor(coordinator, pid, unit),
+        TrendSensor(coordinator, pid),
+        ApplicationTimestampSensor(coordinator, pid),
+        ExpirationTimestampSensor(coordinator, pid),
+        LastMeasurementTimestampSensor(coordinator, pid),
+    ]
 
     async_add_entities(sensors)
 
 
-class LibreLinkSensor(LibreLinkDevice, SensorEntity):
-    """LibreLink Sensor class."""
+class LibreLinkSensorBase(CoordinatorEntity[LibreLinkDataUpdateCoordinator]):
+    """LibreLink Sensor base class."""
 
-    def __init__(
-        self,
-        coordinator: LibreLinkDataUpdateCoordinator,
-        index,
-        key: str,
-        name: str,
-        uom,
-    ) -> None:
+    def __init__(self, coordinator: LibreLinkDataUpdateCoordinator, pid: str) -> None:
         """Initialize the device class."""
-        super().__init__(coordinator, index)
-        self.uom = uom
-        self.patients = (
-            self.coordinator.data[index]["firstName"]
-            + " "
-            + self.coordinator.data[index]["lastName"]
-        )
-        self.patientId = self.coordinator.data[index]["patientId"]
-        self._attr_unique_id = f"{self.coordinator.data[index]['patientId']}_{key}"
-        self._attr_name = name
-        self.index = index
-        self.key = key
+        super().__init__(coordinator)
+
+        self.id = pid
 
     @property
-    def native_value(self):
-        """Return the native value of the sensor."""
+    def device_info(self):
+        """Return the device info of the sensor."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._data.id)},
+            name=self._data.name,
+            model=VERSION,
+            manufacturer=NAME,
+        )
 
-        result = None
+    @property
+    def attribution(self):
+        """Return the attribution for this entity."""
+        return ATTRIBUTION
 
-        # to avoid failing requests if there is no activated sensor for a patient.
-        if self.coordinator.data[self.index] is not None:
-            if self.key == "value":
-                if self.uom == MG_DL:
-                    result = int(
-                        self.coordinator.data[self.index]["glucoseMeasurement"][
-                            "ValueInMgPerDl"
-                        ]
-                    )
-                if self.uom == MMOL_L:
-                    result = round(
-                        float(
-                            self.coordinator.data[self.index][
-                                "glucoseMeasurement"
-                            ]["ValueInMgPerDl"]
-                            / MMOL_DL_TO_MG_DL
-                        ),
-                        1,
-                    )
+    @property
+    def has_entity_name(self):
+        """Return if the entity has a name."""
+        return True
 
-            elif self.key == "trend":
-                result = GLUCOSE_TREND_MESSAGE[
-                    (
-                        self.coordinator.data[self.index]["glucoseMeasurement"][
-                            "TrendArrow"
-                        ]
-                    )
-                    - 1
-                ]
+    @property
+    def _data(self):
+        return self.coordinator.data[self.id]
 
-            elif self.key == "sensor":
-                if self.coordinator.data[self.index]["sensor"] is not None:
-                    result = int(
-                        (
-                            time.time()
-                            - (self.coordinator.data[self.index]["sensor"]["a"])
-                        )
-                        / 86400
-                    )
+    @property
+    def unique_id(self):
+        """Return the unique id of the sensor."""
+        return f"{self._data.id} {self.name}".replace(" ", "_").lower()
 
-            elif self.key == "delay":
-                result = int(
-                    (
-                        datetime.now()
-                        - datetime.strptime(
-                            self.coordinator.data[self.index][
-                                "glucoseMeasurement"
-                            ]["Timestamp"],
-                            "%m/%d/%Y %I:%M:%S %p",
-                        )
-                    ).total_seconds()
-                    / 60  # convert seconds in minutes
-                )
 
-            return result
-        return None
+class LibreLinkSensor(LibreLinkSensorBase, SensorEntity):
+    """LibreLink Sensor class."""
 
     @property
     def icon(self):
         """Return the icon for the frontend."""
-
-        if self.coordinator.data[self.index]["glucoseMeasurement"]["TrendArrow"]:
-            if self.key in ["value", "trend"]:
-                return GLUCOSE_TREND_ICON[
-                    (
-                        self.coordinator.data[self.index]["glucoseMeasurement"][
-                            "TrendArrow"
-                        ]
-                    )
-                    - 1
-                ]
         return GLUCOSE_VALUE_ICON
+
+
+class TrendSensor(LibreLinkSensor):
+    """Glucose Trend Sensor class."""
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return "Trend"
+
+    @property
+    def native_value(self):
+        """Return the native value of the sensor."""
+        return GLUCOSE_TREND_MESSAGE[self._data.measurement.trend]
+
+    @property
+    def icon(self):
+        """Return the icon for the frontend."""
+        return GLUCOSE_TREND_ICON[self._data.measurement.trend]
+
+
+class MeasurementSensor(TrendSensor, LibreLinkSensor):
+    """Glucose Measurement Sensor class."""
+
+    def __init__(
+        self,
+        coordinator: LibreLinkDataUpdateCoordinator,
+        pid: str,
+        unit: UnitOfMeasurement,
+    ) -> None:
+        """Initialize the sensor class."""
+        super().__init__(coordinator, pid)
+        self.unit = unit
+
+    @property
+    def state_class(self):
+        """Return the state class of the sensor."""
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return "Measurement"
+
+    @property
+    def native_value(self):
+        """Return the native value of the sensor."""
+        return self.unit.from_mg_per_dl(self._data.measurement.value)
+
+    @property
+    def suggested_display_precision(self):
+        """Return the suggested precision of the sensor."""
+        return self.unit.suggested_display_precision
 
     @property
     def unit_of_measurement(self):
-        """Only used for glucose measurement and librelink sensor delay since update."""
+        """Return the unit of measurement of the sensor."""
+        return self.unit.unit_of_measurement
 
-        if self.coordinator.data[self.index]:
-            if self.key in ["sensor", "value"]:
-                return self.uom
-        return None
+
+class TimestampSensor(LibreLinkSensor):
+    """Timestamp Sensor class."""
+
+    @property
+    def device_class(self):
+        """Return the device class of the sensor."""
+        return SensorDeviceClass.TIMESTAMP
+
+
+class ApplicationTimestampSensor(TimestampSensor):
+    """Sensor Days Sensor class."""
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return "Application Timestamp"
+
+    @property
+    def available(self):
+        """Return if the sensor data are available."""
+        return self._data.device.application_timestamp is not None
+
+    @property
+    def native_value(self):
+        """Return the native value of the sensor."""
+        return self._data.device.application_timestamp
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the librelink sensor."""
-        result = None
-        if self.coordinator.data[self.index]:
-            if self.key == "sensor":
-                if self.coordinator.data[self.index]["sensor"] is not None:
-                    result = {
-                        "Serial number": f"{self.coordinator.data[self.index]['sensor']['pt']} {self.coordinator.data[self.index]['sensor']['sn']}",
-                        "Activation date": datetime.fromtimestamp(
-                            self.coordinator.data[self.index]["sensor"]["a"]
-                        ),
-                        "patientId": self.coordinator.data[self.index]["patientId"],
-                        "Patient": f"{(self.coordinator.data[self.index]['lastName']).upper()} {self.coordinator.data[self.index]['firstName']}",
-                    }
+        attrs = {
+            "Patient ID": self._data.id,
+            "Patient": self._data.name,
+        }
+        if self.available:
+            attrs |= {
+                "Serial number": self._data.device.serial_number,
+                "Activation date": self._data.device.application_timestamp,
+            }
 
-            return result
-        return result
+        return attrs
+
+
+class ExpirationTimestampSensor(ApplicationTimestampSensor):
+    """Sensor Days Sensor class."""
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return "Expiration Timestamp"
+
+    @property
+    def native_value(self):
+        """Return the native value of the sensor."""
+        return self._data.device.expiration_timestamp
+
+
+class LastMeasurementTimestampSensor(TimestampSensor):
+    """Sensor Delay Sensor class."""
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return "Last Measurement Timestamp"
+
+    @property
+    def native_value(self):
+        """Return the native value of the sensor."""
+        return self._data.measurement.timestamp

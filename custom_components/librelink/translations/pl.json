@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wpisz email i hasło do konta LibreLink.",
+        "description": "Dokumentacja: https://github.com/gillesvs/librelink",
+        "data": {
+          "username": "Email",
+          "password": "Hasło"
+        }
+      }
+    },
+    "error": {
+      "auth": "Podany email lub hasło są niepoprawne.",
+      "connection": "Nie można połączyć się z serwerem LibreLink.",
+      "unknown": "Wystąpił nieznany błąd."
+    },
+    "abort": {
+      "already_configured": "Urządzenie jest już skonfigurowane."
+    }
+  }
+}

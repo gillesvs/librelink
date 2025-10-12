@@ -2,25 +2,34 @@
 
 from __future__ import annotations
 
-import logging
-
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_UNIT_OF_MEASUREMENT, CONF_USERNAME
-from homeassistant.helpers import config_validation as cv, selector
+from homeassistant.const import (
+    CONF_PASSWORD,
+    CONF_UNIT_OF_MEASUREMENT,
+    CONF_URL,
+    CONF_USERNAME,
+)
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .api import (
-    LibreLinkApiAuthenticationError,
-    LibreLinkApiCommunicationError,
-    LibreLinkApiError,
-    LibreLinkApiLogin,
+    LibreLinkAPI,
+    LibreLinkAPIAuthenticationError,
+    LibreLinkAPIConnectionError,
+    LibreLinkAPIError,
 )
-from .const import BASE_URL_LIST, COUNTRY, COUNTRY_LIST, DOMAIN, LOGGER, MG_DL, MMOL_L
-
-# GVS: Init logger
-_LOGGER = logging.getLogger(__name__)
+from .const import BASE_URL_LIST, CONF_PATIENT_ID, DOMAIN, LOGGER
+from .units import UNITS_OF_MEASUREMENT
 
 
 class LibreLinkFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -36,67 +45,90 @@ class LibreLinkFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         _errors = {}
         if user_input is not None:
             try:
-                await self._test_credentials(
-                    username=user_input[CONF_USERNAME],
-                    password=user_input[CONF_PASSWORD],
-                    base_url=BASE_URL_LIST.get(user_input[COUNTRY]),
+                username = user_input[CONF_USERNAME]
+                password = user_input[CONF_PASSWORD]
+                base_url = user_input[CONF_URL]
+
+                client = LibreLinkAPI(
+                    base_url=base_url, session=async_create_clientsession(self.hass)
                 )
-            except LibreLinkApiAuthenticationError as exception:
-                LOGGER.warning(exception)
+                await client.async_login(username, password)
+
+                self.patients = await client.async_get_data()
+                self.basic_info = user_input
+
+                return await self.async_step_patient()
+            except LibreLinkAPIAuthenticationError as e:
+                LOGGER.warning(e)
                 _errors["base"] = "auth"
-            except LibreLinkApiCommunicationError as exception:
-                LOGGER.error(exception)
+            except LibreLinkAPIConnectionError as e:
+                LOGGER.error(e)
                 _errors["base"] = "connection"
-            except LibreLinkApiError as exception:
-                LOGGER.exception(exception)
+            except LibreLinkAPIError as e:
+                LOGGER.exception(e)
                 _errors["base"] = "unknown"
-            else:
-                return self.async_create_entry(
-                    title=user_input[CONF_USERNAME],
-                    data=user_input,
-                )
 
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        CONF_USERNAME,
-                        default=(user_input or {}).get(CONF_USERNAME),
-                    ): selector.TextSelector(
-                        selector.TextSelectorConfig(
-                            type=selector.TextSelectorType.TEXT
-                        ),
-                    ),
-                    vol.Required(CONF_PASSWORD): selector.TextSelector(
-                        selector.TextSelectorConfig(
-                            type=selector.TextSelectorType.PASSWORD
-                        ),
+                        CONF_USERNAME, default=(user_input or {}).get(CONF_USERNAME)
+                    ): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.TEXT),
                     ),
                     vol.Required(
-                        COUNTRY,
-                        description="Country",
-                        default=(COUNTRY_LIST[0]),
-                    ): vol.In(COUNTRY_LIST),
-                    vol.Required(
-                        CONF_UNIT_OF_MEASUREMENT,
-                        default=(MG_DL),
-                    ): vol.In({MG_DL, MMOL_L}),
+                        CONF_PASSWORD, default=(user_input or {}).get(CONF_PASSWORD)
+                    ): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD),
+                    ),
+                    vol.Required(CONF_URL): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(label=k, value=v)
+                                for k, v in BASE_URL_LIST.items()
+                            ],
+                            mode=SelectSelectorMode.DROPDOWN,
+                        ),
+                    ),
                 }
             ),
             errors=_errors,
         )
 
-    async def _test_credentials(
-        self, username: str, password: str, base_url: str
-    ) -> None:
-        """Validate credentials."""
-        client = LibreLinkApiLogin(
-            username=username,
-            password=password,
-            base_url=base_url,
-            session=async_create_clientsession(self.hass),
+    async def async_step_patient(self, user_input=None):
+        """Handle a flow to select specific patient."""
+        if user_input is not None:
+            user_input |= self.basic_info
+
+            patient = {patient.id: patient for patient in self.patients}.get(
+                user_input[CONF_PATIENT_ID]
+            )
+
+            return self.async_create_entry(
+                title=f"{patient.name} (via {user_input[CONF_USERNAME]})",
+                data=user_input,
+            )
+
+        return self.async_show_form(
+            step_id="patient",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_PATIENT_ID): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=patient.id, label=patient.name)
+                                for patient in self.patients
+                            ]
+                        )
+                    ),
+                    vol.Required(CONF_UNIT_OF_MEASUREMENT): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                u.unit_of_measurement for u in UNITS_OF_MEASUREMENT
+                            ]
+                        )
+                    ),
+                }
+            ),
         )
-
-        await client.async_get_token()
-
