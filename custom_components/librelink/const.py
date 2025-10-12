@@ -25,7 +25,7 @@ BASE_URL_LIST: Final = {
     "United States": "https://api-us.libreview.io",
 }
 PRODUCT: Final = "llu.android"
-VERSION_APP: Final = "4.12.0"
+VERSION_APP: Final = "4.16.0"
 GLUCOSE_VALUE_ICON: Final = "mdi:diabetes"
 GLUCOSE_TREND_ICON: Final = {
     1: "mdi:arrow-down-bold-box",
