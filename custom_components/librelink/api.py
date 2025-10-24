@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import socket
 
@@ -27,28 +28,41 @@ class LibreLinkApiClient:
         token: The long life token to authenticate.
         base_url: For API calls depending on your location
         Session: aiottp object for the open session
+        account_id_hash: SHA256 hash of the account ID for API authentication
     """
 
     def __init__(
-        self, token: str, base_url: str, session: aiohttp.ClientSession
+        self, token: str, base_url: str, session: aiohttp.ClientSession, account_id: str = None
     ) -> None:
         """Sample API Client."""
         self._token = token
         self._session = session
         self.connection_url = base_url + CONNECTION_URL
+        # Hash the account ID for the account-id header (required as of version 4.16.0)
+        self._account_id_hash = hashlib.sha256(account_id.encode()).hexdigest() if account_id else None
 
     async def async_get_data(self) -> any:
         """Get data from the API."""
+        # Build headers with required account-id hash (required as of API version 4.16.0)
+        headers = {
+            "accept-encoding": "gzip",
+            "cache-control": "no-cache",
+            "connection": "Keep-Alive",
+            "content-type": "application/json",
+            "product": PRODUCT,
+            "version": VERSION_APP,
+            "authorization": "Bearer " + self._token,
+        }
+        
+        # Add hashed account ID if available
+        if self._account_id_hash:
+            headers["account-id"] = self._account_id_hash
+        
         APIreponse = await api_wrapper(
             self._session,
             method="get",
             url=self.connection_url,
-            headers={
-                "product": PRODUCT,
-                "version": VERSION_APP,
-                "Application": APPLICATION,
-                "Authorization": "Bearer " + self._token,
-            },
+            headers=headers,
             data={},
         )
 
@@ -143,8 +157,8 @@ class LibreLinkApiLogin:
         self.login_url = base_url + LOGIN_URL
         self._session = session
 
-    async def async_get_token(self) -> any:
-        """Get token from the API."""
+    async def async_get_token(self) -> dict:
+        """Get token and account ID from the API."""
         reponseLogin = await api_wrapper(
             self._session,
             method="post",
@@ -166,8 +180,9 @@ class LibreLinkApiLogin:
             )
 
         monToken = reponseLogin["data"]["authTicket"]["token"]
+        accountId = reponseLogin["data"]["user"]["id"]
 
-        return monToken
+        return {"token": monToken, "accountId": accountId}
 
 
 ################################################################
