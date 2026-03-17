@@ -45,13 +45,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     # Then getting the token. This token is a long life token, so initializaing at HA start up is enough
-    sessionToken = await myLibrelinkLogin.async_get_token()
+    loginResponse = await myLibrelinkLogin.async_get_token()
+    sessionToken = loginResponse["token"]
+    accountId = loginResponse["accountId"]
 
     # The retrieved token will be used to initiate the coordinator which will be used to update the data on a regular basis
     myLibrelinkClient = LibreLinkApiClient(
-        sessionToken,
-        session=async_get_clientsession(hass),
+        token=sessionToken,
         base_url=BASE_URL_LIST.get(entry.data[COUNTRY]),
+        session=async_get_clientsession(hass),
+        account_id=accountId,
+        username=entry.data[CONF_USERNAME],
+        password=entry.data[CONF_PASSWORD],
     )
 
     # Kept for later use in case historical data is needed

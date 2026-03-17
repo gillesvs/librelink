@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import socket
 
@@ -21,52 +22,101 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class LibreLinkApiClient:
-    """API class to retriev measurement data.
-
-    Attributes:
-        token: The long life token to authenticate.
-        base_url: For API calls depending on your location
-        Session: aiottp object for the open session
-    """
+    """API class to retrieve measurement data with automatic re-authentication."""
 
     def __init__(
-        self, token: str, base_url: str, session: aiohttp.ClientSession
+        self,
+        token: str,
+        base_url: str,
+        session: aiohttp.ClientSession,
+        account_id: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
     ) -> None:
         """Sample API Client."""
         self._token = token
         self._session = session
+        self._base_url = base_url
         self.connection_url = base_url + CONNECTION_URL
+        self._username = username
+        self._password = password
+        self._reauth_lock = asyncio.Lock()
+        self._account_id_hash = self._hash_account_id(account_id)
+
+    @staticmethod
+    def _hash_account_id(account_id: str | None) -> str | None:
+        """Hash the account ID for the account-id header."""
+        if not account_id:
+            return None
+        return hashlib.sha256(account_id.encode()).hexdigest()
+
+    def _build_headers(self) -> dict:
+        """Build headers for data requests."""
+        headers = {
+            "accept-encoding": "gzip",
+            "cache-control": "no-cache",
+            "connection": "Keep-Alive",
+            "content-type": "application/json",
+            "product": PRODUCT,
+            "version": VERSION_APP,
+            "authorization": "Bearer " + self._token,
+        }
+
+        if self._account_id_hash:
+            headers["account-id"] = self._account_id_hash
+
+        return headers
+
+    async def _async_refresh_auth(self) -> None:
+        """Re-login and replace the stored token/account information."""
+        if not self._username or not self._password:
+            raise LibreLinkApiAuthenticationError(
+                "Cannot refresh authentication without stored credentials",
+            )
+
+        async with self._reauth_lock:
+            _LOGGER.debug("Refreshing LibreLink authentication token")
+            login_client = LibreLinkApiLogin(
+                username=self._username,
+                password=self._password,
+                base_url=self._base_url,
+                session=self._session,
+            )
+            login_response = await login_client.async_get_token()
+            self._token = login_response["token"]
+            self._account_id_hash = self._hash_account_id(login_response["accountId"])
+            _LOGGER.debug("LibreLink authentication token refreshed successfully")
 
     async def async_get_data(self) -> any:
-        """Get data from the API."""
-        APIreponse = await api_wrapper(
-            self._session,
-            method="get",
-            url=self.connection_url,
-            headers={
-                "product": PRODUCT,
-                "version": VERSION_APP,
-                "Application": APPLICATION,
-                "Authorization": "Bearer " + self._token,
-            },
-            data={},
-        )
-
-        # Ordering API response by patients as the API does not always send patients in the same order
-        # This temporary solution works only when you do not add a new Patient in your account.
-        # HELP NEEDED - If your fork this project, find a way to navigate through the API response without mixing patients when they arrive in a different order. Strangely, Index numbers are not reevaluated by existing sensors when updated.
-        # Sorting patients is ok until you add a new patients and then it mixed up indexes. So the solution is to delete the integration and reinstall it when you want to add a patient.
+        """Get data from the API and retry once after auth refresh if needed."""
+        try:
+            api_response = await api_wrapper(
+                self._session,
+                method="get",
+                url=self.connection_url,
+                headers=self._build_headers(),
+                data={},
+            )
+        except LibreLinkApiAuthenticationError:
+            _LOGGER.debug("Authentication failed during data fetch, attempting re-login")
+            await self._async_refresh_auth()
+            api_response = await api_wrapper(
+                self._session,
+                method="get",
+                url=self.connection_url,
+                headers=self._build_headers(),
+                data={},
+            )
 
         _LOGGER.debug(
             "Return API Status:%s ",
-            APIreponse["status"],
+            api_response["status"],
         )
 
-        # API status return 0 if everything goes well.
-        if APIreponse["status"] == 0:
-            patients = sorted(APIreponse["data"], key=lambda x: x["patientId"])
+        if api_response["status"] == 0:
+            patients = sorted(api_response["data"], key=lambda x: x["patientId"])
         else:
-            patients = APIreponse  # to be used for debugging in status not ok
+            patients = api_response
 
         _LOGGER.debug(
             "Number of patients : %s and patient list %s",
@@ -98,7 +148,7 @@ class LibreLinkGetGraph:
 
     async def async_get_data(self) -> any:
         """Get data from the API."""
-        APIreponse = await api_wrapper(
+        api_response = await api_wrapper(
             self._session,
             method="get",
             url=self.connection_url,
@@ -114,21 +164,14 @@ class LibreLinkGetGraph:
 
         _LOGGER.debug(
             "Get Connection : %s",
-            APIreponse,
+            api_response,
         )
 
-        return APIreponse
+        return api_response
 
 
 class LibreLinkApiLogin:
-    """API class to retriev token.
-
-    Attributes:
-        username: of the librelink account
-        password: of the librelink account
-        base_url: For API calls depending on your location
-        Session: aiottp object for the open session
-    """
+    """API class to retrieve token."""
 
     def __init__(
         self,
@@ -143,9 +186,9 @@ class LibreLinkApiLogin:
         self.login_url = base_url + LOGIN_URL
         self._session = session
 
-    async def async_get_token(self) -> any:
-        """Get token from the API."""
-        reponseLogin = await api_wrapper(
+    async def async_get_token(self) -> dict:
+        """Get token and account ID from the API."""
+        response_login = await api_wrapper(
             self._session,
             method="post",
             url=self.login_url,
@@ -158,21 +201,17 @@ class LibreLinkApiLogin:
         )
         _LOGGER.debug(
             "Login status : %s",
-            reponseLogin["status"],
+            response_login["status"],
         )
-        if reponseLogin["status"]==2:
+        if response_login["status"] == 2:
             raise LibreLinkApiAuthenticationError(
                 "Invalid credentials",
             )
 
-        monToken = reponseLogin["data"]["authTicket"]["token"]
+        token = response_login["data"]["authTicket"]["token"]
+        account_id = response_login["data"]["user"]["id"]
 
-        return monToken
-
-
-################################################################
-#            """Utilitises """               #
-################################################################
+        return {"token": token, "accountId": account_id}
 
 
 @staticmethod
@@ -198,7 +237,6 @@ async def api_wrapper(
                     "Invalid credentials",
                 )
             response.raise_for_status()
-            #
             return await response.json()
 
     except asyncio.TimeoutError as exception:
@@ -209,6 +247,8 @@ async def api_wrapper(
         raise LibreLinkApiCommunicationError(
             "Error fetching information",
         ) from exception
+    except LibreLinkApiAuthenticationError:
+        raise
     except Exception as exception:  # pylint: disable=broad-except
         raise LibreLinkApiError("Something really wrong happened!") from exception
 
